@@ -8,8 +8,15 @@ import math
 import random
 import sys
 
+FOUR_POINT_CALIBRATION = "4_point_calibration"
+THREE_POINT_CALIBRATION = "3_point_calibration"
+X_AXIS = "find_x_axis"
+Y_AXIS = "find_y_axis"
+FIND = 1.0
+RETURN = -1.0
+
 class TrajectoryPublisher(Node):
-    def __init__(self):
+    def __init__(self, calibration_type=FOUR_POINT_CALIBRATION):
         super().__init__('trajectory_node')
 
         self.path_pub = self.create_publisher(Path, 'particle_path', 10)
@@ -22,8 +29,14 @@ class TrajectoryPublisher(Node):
         self.radius = 0.3
         self.angular_speed = 0.1
         self.start_height = 2.0
+        self.block_height = 1.0
+        self.three_point_axis_dist = 0.7
 
-        self.conveyor_belt = conveyorBelt()
+        if calibration_type == FOUR_POINT_CALIBRATION:
+            self.conveyor_belt = conveyorBelt(num_points=4)
+        elif calibration_type == THREE_POINT_CALIBRATION:
+            self.conveyor_belt = conveyorBelt(num_points=3)
+            
         self.calibration_block = calibrationBlock(self.step_xy, self.conveyor_belt.conveyor_intervals)
         self.conveyor_belt.publish_markers()
         self.calibration_block.publish_markers()
@@ -32,6 +45,7 @@ class TrajectoryPublisher(Node):
         self.block_movement_initialized = False
         self.predicted_points = []
         self.actual_points = []
+        self.axis_points = []
 
         # --- State variables ---
         self.get_logger().info("Current Circle Origin ({:.2f}, {:.2f})".format(self.calibration_block.conveyor_position, 0.0))
@@ -48,9 +62,9 @@ class TrajectoryPublisher(Node):
         self.estimated_center_y = None
         self.last_hit_time = {"x": 0.0, "y": 0.0}  # debounce timer
         self.hit_cooldown = 1.0  # seconds
+        self.calibration_state = calibration_type
 
         self.create_timer(0.1, self.state_machine)
-
 
     def publish_pose(self):
         pose = PoseStamped()
@@ -67,8 +81,8 @@ class TrajectoryPublisher(Node):
 
     def init_descent(self):
         # TODO: What motion is best to detect circle depth? What to do if you exceed max depth without detection?
-        self.z = max(1.0, self.z - self.step_z)
-        if self.z > 1.0:
+        self.z = max(self.block_height, self.z - self.step_z)
+        if self.z > self.block_height:
             self.publish_pose()
         else:
             self.center_x = self.x
@@ -150,7 +164,7 @@ class TrajectoryPublisher(Node):
         dx = self.calibration_block.conveyor_position - self.x
         dy = 0.0 - self.y
         dist = math.sqrt(dx**2 + dy**2)
-        self.get_logger().info("Current Position ({:.2f}, {:.2f})".format(dx, dy))
+        # self.get_logger().info("Current Position ({:.2f}, {:.2f})".format(dx, dy))
         # TODO: Keep moving with laser estimate until the sign of your distance changes (which means you passed the center)
         if dist > self.step_xy:
             dx /= dist
@@ -180,14 +194,64 @@ class TrajectoryPublisher(Node):
             self.get_logger().info("Reached eddy sensor height. Trajectory complete.")
             self.actual_points.append((self.x, self.y))
             self.predicted_points.append((self.calibration_block.conveyor_position, 0.0))
-            self.state = "ascent"
+            self.state = "init_ascent"
 
-    def ascent(self):
+    def init_ascent(self):
+        if self.z < self.block_height:
+            self.z += self.step_z
+            self.publish_pose()
+        else:
+            self.get_logger().info("Initial Ascent complete")
+            self.state = "find_x_axis"
+        return
+    
+    def find_axis(self, direction=FIND, axis=X_AXIS):
+        if self.calibration_state == FOUR_POINT_CALIBRATION:
+            self.state = "final_ascent"
+            return
+
+        finished_state = False
+        if axis == X_AXIS:
+            if direction == FIND and (self.x -  self.calibration_block.conveyor_position) < self.three_point_axis_dist:
+                self.x += self.step_xy * self.three_point_axis_dist
+                self.get_logger().info("Current Position ({:.2f}, {:.2f})".format(self.x, self.y))
+                self.publish_pose()
+            elif direction == RETURN and (self.x -  self.calibration_block.conveyor_position) > 0:
+                self.x -= self.step_xy * self.three_point_axis_dist
+                self.publish_pose()
+            else:
+                finished_state = True
+        elif axis == Y_AXIS:
+            if direction == FIND and self.y < self.three_point_axis_dist:
+                self.y += self.step_xy * self.three_point_axis_dist
+                self.publish_pose()
+            elif direction == RETURN and self.y > 0:
+                self.y -=  self.step_xy * self.three_point_axis_dist
+                self.publish_pose()
+            else:
+                finished_state = True
+        
+        if finished_state:
+            if self.state == "find_x_axis":
+                self.get_logger().info("Find X axis complete")
+                self.state = "return_x_axis"
+            elif self.state == "return_x_axis":
+                self.get_logger().info("Return X axis complete")
+                self.state = "find_y_axis"
+            elif self.state == "find_y_axis":
+                self.get_logger().info("Find Y axis complete")
+                self.state = "return_y_axis"
+            else:
+                self.get_logger().info("Return Y axis complete")
+                self.state = "final_ascent"
+        return
+
+    def final_ascent(self):
         if self.z < self.start_height:
             self.z += self.step_z
             self.publish_pose()
         else:
-            self.get_logger().info("Ascent complete. Trajectory finished.")
+            self.get_logger().info("Final Ascent complete")
             self.state = "find_block"
         return
     
@@ -207,7 +271,7 @@ class TrajectoryPublisher(Node):
                 print(self.actual_points)
                 print(self.predicted_points)
                 self.get_logger().info("4-Point Calibration Complete. Exiting.")
-                analyze_line_fit(self.actual_points)
+                analyze_line_fit(self.actual_points, show_plot=False)
                 sys.exit(0)
             else:
                 self.get_logger().info("Reached calibration block. Restarting process.")
@@ -248,17 +312,37 @@ class TrajectoryPublisher(Node):
             self.find_eddy()
             return
         
-        elif self.state == "ascent":
-            self.ascent()
+        elif self.state == "init_ascent":
+            self.init_ascent()
             return
-            
+
+        elif self.state == "find_x_axis":
+            self.find_axis(direction=FIND, axis=X_AXIS)
+            return         
+
+        elif self.state == "return_x_axis":
+            self.find_axis(direction=RETURN, axis=X_AXIS)
+            return
+
+        elif self.state == "find_y_axis":
+            self.find_axis(direction=FIND, axis=Y_AXIS)
+            return
+
+        elif self.state == "return_y_axis":
+            self.find_axis(direction=RETURN, axis=Y_AXIS)
+            return
+
+        elif self.state == "final_ascent":
+            self.final_ascent()
+            return
+        
         elif self.state == "find_block":
             self.find_block()
             return
 
 def main(args=None):
     rclpy.init(args=args)
-    node = TrajectoryPublisher()
+    node = TrajectoryPublisher(calibration_type=THREE_POINT_CALIBRATION)
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
