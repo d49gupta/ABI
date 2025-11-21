@@ -1,129 +1,138 @@
 import cv2
 import numpy as np
 
-# image_path = r"C:\Users\evanh\ABI\vision\april_tag.png"
+# INPUT IMAGE PATH - CHANGE TO YOUR IMAGE
 image_path = r"C:\Users\evanh\ABI\vision\april_tags.jpg"
 
-def generate_36h11_tag(dictionary):
-    # NOTE: The generated tag is too ideal to be picked up by the following code
-    # Generate a valid april tag (36h11)
-    # Generate a tag with ID 0
-    tag_id = 0
-    tag_size = 400  # pixels
-    tag_image = cv2.aruco.generateImageMarker(dictionary, tag_id, tag_size)
-
-    # Save the generated tag
-    cv2.imwrite(image_path, tag_image)
-    print("Generated april_tag.png!")
-
-# Load image
+# LOAD IMAGE
 image = cv2.imread(image_path)
 if image is None:
-    raise FileNotFoundError(f"Could not load {image_path}. Check file integrity.")
+    raise FileNotFoundError(f"Could not load {image_path}. Check path.")
 
-# Convert to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# Initialize the AprilTag detector using aruco
-# Available families: TAG16h5, TAG25h9, TAG36h11, etc.
+# APRILTAG DETECTOR (Aruco wrapper)
 parameters = cv2.aruco.DetectorParameters()
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
 detector = cv2.aruco.ArucoDetector(dictionary, parameters)
 
-# Detect tags
+# Detect AprilTags
 corners, ids, rejected = detector.detectMarkers(gray)
+if ids is None:
+    print("No tags detected.")
+    exit()
 
-# Draw detections and print pose info
-if ids is not None:
-    for i, corner in enumerate(corners):
-        # Draw marker outline
-        cv2.polylines(image, [corner.astype(int)], True, (0, 255, 0), 2)
+cv2.aruco.drawDetectedMarkers(image, corners, ids)
+print(f"Detected Tags: {ids.flatten()}")
 
-        # Compute the center
-        cX = int(corner[0][:, 0].mean())
-        cY = int(corner[0][:, 1].mean())
-        cv2.circle(image, (cX, cY), 5, (0, 0, 255), -1)
-
-        print(f"Tag ID: {ids[i][0]}, Center: ({cX}, {cY})")
-
-    # cv2.imshow("AprilTag Detection", image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-else:
-    print("No AprilTags detected.")
-
-# Camera calibration parameters (you need to calibrate your camera or use estimates)
-# These are example values - replace with your actual camera parameters
-focal_length = image.shape[1]  # Rough estimate
-center = (image.shape[1] / 2, image.shape[0] / 2)
+# CAMERA PARAMETERS - REPLACE WITH YOUR CALIBRATION
+focal_length = 15.12  # in pixels (Iphone 12 back camera)
+cx = image.shape[1] / 2
+cy = image.shape[0] / 2
 camera_matrix = np.array([
-    [focal_length, 0, center[0]],
-    [0, focal_length, center[1]],
+    [focal_length, 0, cx],
+    [0, focal_length, cy],
     [0, 0, 1]
-], dtype=float)
-dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
+], dtype=np.float32)
+dist_coeffs = np.zeros((4, 1), dtype=np.float32)  # change if you have distortion
 
-# Real-world size of the AprilTag in meters (measure your printed tag)
-marker_size = 0.05  # 5cm - CHANGE THIS 
+# TAG SIZE (meters) - CHANGE TO YOUR TAG SIZE
+marker_size = 0.05
 
-if ids is not None:
-    for i, corner in enumerate(corners):
-        # Draw marker outline
-        cv2.polylines(image, [corner.astype(int)], True, (0, 255, 0), 2)
+# BOARD LAYOUT (meters) - CHANGE spacing to your real spacing
+board_spacing = 0.0709
+# Tag ID mapping (as you specified):
+# top-right -> 3, top-left -> 2, bottom-right -> 1, bottom-left -> 0
+board_positions = {
+    2: np.array([-board_spacing / 2,  board_spacing / 2, 0.0]),  # top-left
+    3: np.array([ board_spacing / 2,  board_spacing / 2, 0.0]),  # top-right
+    0: np.array([-board_spacing / 2, -board_spacing / 2, 0.0]),  # bottom-left
+    1: np.array([ board_spacing / 2, -board_spacing / 2, 0.0]),  # bottom-right
+}
 
-        # Define 3D points of the marker corners in object space
-        obj_points = np.array([
-            [-marker_size/2,  marker_size/2, 0],
-            [ marker_size/2,  marker_size/2, 0],
-            [ marker_size/2, -marker_size/2, 0],
-            [-marker_size/2, -marker_size/2, 0]
-        ], dtype=np.float32)
+# SOLVE PNP FOR EACH DETECTED TAG
+transforms = {}  # tag_id -> 4x4 camera->tag transform
+for i, corner in enumerate(corners):
+    tag_id = int(ids[i][0])
+    if tag_id not in board_positions:
+        print(f"Tag {tag_id} detected but not part of layout. Skipping.")
+        continue
 
-        # Get 2D corner points
-        img_points = corner[0]
+    # object points: tag corners in tag-local frame (centered at origin)
+    obj_pts = np.array([
+        [-marker_size / 2,  marker_size / 2, 0.0],
+        [ marker_size / 2,  marker_size / 2, 0.0],
+        [ marker_size / 2, -marker_size / 2, 0.0],
+        [-marker_size / 2, -marker_size / 2, 0.0],
+    ], dtype=np.float32)
 
-        # Solve PnP to get rotation and translation vectors
-        success, rvec, tvec = cv2.solvePnP(obj_points, img_points, camera_matrix, dist_coeffs)
+    img_pts = corner[0].astype(np.float32)
 
-        if success:
-            # Draw axis
-            cv2.drawFrameAxes(image, camera_matrix, dist_coeffs, rvec, tvec, marker_size/2)
+    success, rvec, tvec = cv2.solvePnP(obj_pts, img_pts, camera_matrix, dist_coeffs)
+    if not success:
+        print(f"PnP failed for tag {tag_id}")
+        continue
 
-            # Convert rotation vector to rotation matrix
-            rotation_matrix, _ = cv2.Rodrigues(rvec)
+    R, _ = cv2.Rodrigues(rvec)
+    T = np.eye(4, dtype=np.float32)
+    T[:3, :3] = R
+    T[:3, 3] = tvec.flatten()
 
-            # Extract x, y position and yaw (rotation around z-axis)
-            x = tvec[0][0]
-            y = tvec[1][0]
-            z = tvec[2][0]
+    transforms[tag_id] = T
+    print(f"\nTag {tag_id} camera->tag transform:\n{T}")
 
-            # Calculate yaw from rotation matrix
-            # Yaw is the rotation around the Z-axis
-            yaw = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
-            yaw_degrees = np.degrees(yaw)
+# COMPUTE camera->board for each tag and collect estimates
+camera_T_board_estimates = []
+for tag_id, camera_T_tag in transforms.items():
+    tag_T_board = np.eye(4, dtype=np.float32)
+    tag_T_board[:3, 3] = -board_positions[tag_id]
+    camera_T_board = camera_T_tag @ tag_T_board
+    camera_T_board_estimates.append(camera_T_board)
 
-            print(f"\nTag ID: {ids[i][0]}")
-            print(f"Position (x, y, z): ({x:.3f}m, {y:.3f}m, {z:.3f}m)")
-            print(f"Yaw: {yaw_degrees:.2f}°")
-            print(f"Rotation Matrix:\n{rotation_matrix}")
-            print(f"Translation Vector:\n{tvec}")
+if len(camera_T_board_estimates) == 0:
+    raise RuntimeError("No valid camera->board estimates were computed.")
 
-            # Convert rotation vector to rotation matrix
-            rotation_matrix, _ = cv2.Rodrigues(rvec)
+# AVERAGE TRANSLATIONS
+translations = np.array([T[:3, 3] for T in camera_T_board_estimates])
+mean_translation = translations.mean(axis=0)
 
-            # Create 4x4 transformation matrix
-            transformation_matrix = np.eye(4)
-            transformation_matrix[:3, :3] = rotation_matrix  # Top-left 3x3: rotation
-            transformation_matrix[:3, 3] = tvec.flatten()     # Top-right 3x1: translation
+# AVERAGE ROTATIONS using SVD projection to SO(3)
+rotation_matrices = [T[:3, :3] for T in camera_T_board_estimates]
+R_sum = np.zeros((3, 3), dtype=np.float32)
+for R in rotation_matrices:
+    R_sum += R
+U, _, Vt = np.linalg.svd(R_sum)
+mean_rotation = U @ Vt
+# Ensure proper rotation (determinant = +1)
+if np.linalg.det(mean_rotation) < 0:
+    U[:, -1] *= -1
+    mean_rotation = U @ Vt
 
-            print("Transformation Matrix:")
-            print(transformation_matrix)
+# FINAL transform camera->board
+final_T = np.eye(4, dtype=np.float32)
+final_T[:3, :3] = mean_rotation
+final_T[:3, 3] = mean_translation
 
-    scale = 0.5
-    display_image = cv2.resize(image, None, fx=0.5, fy=0.5)
-    cv2.imshow("AprilTag Detection with Pose", display_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-else:
-    print("No AprilTags detected.")
-    print(f"Number of rejected candidates: {len(rejected)}")
+print("\nFinal Camera->Board Transform Estimate:")
+print(final_T)
+
+# OPTIONAL: draw the board center on the image
+# project the board-origin (0,0,0) in board frame to image using final_T inverse
+# compute board->camera by inverting final_T
+board_T_camera = np.linalg.inv(final_T)
+board_origin_in_camera = board_T_camera[:3, 3]
+
+# project to pixel coordinates
+point_cam = board_origin_in_camera.reshape(3, 1)
+proj = camera_matrix @ point_cam
+proj = (proj / proj[2]).astype(int)
+px, py = int(proj[0]), int(proj[1])
+cv2.circle(image, (px, py), 6, (0, 0, 255), -1)
+cv2.putText(image, 'Board Center', (px + 8, py), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+
+scale = 0.5
+display_image = cv2.resize(image, None, fx=0.5, fy=0.5)
+cv2.imshow("AprilTag Detection with Pose", display_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
