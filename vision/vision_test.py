@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 
-dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+# image_path = r"C:\Users\evanh\ABI\vision\april_tag.png"
+image_path = r"C:\Users\evanh\ABI\vision\april_tags.jpg"
 
 def generate_36h11_tag(dictionary):
     # NOTE: The generated tag is too ideal to be picked up by the following code
@@ -12,13 +13,13 @@ def generate_36h11_tag(dictionary):
     tag_image = cv2.aruco.generateImageMarker(dictionary, tag_id, tag_size)
 
     # Save the generated tag
-    cv2.imwrite(r"C:\Users\evanh\ABI\vision\april_tag.png", tag_image)
+    cv2.imwrite(image_path, tag_image)
     print("Generated april_tag.png!")
 
 # Load image
-image = cv2.imread(r"C:\Users\evanh\ABI\vision\april_tag_ex.png")
+image = cv2.imread(image_path)
 if image is None:
-    raise FileNotFoundError("Could not load 'april_tag.png'. Check path and file integrity.")
+    raise FileNotFoundError(f"Could not load {image_path}. Check file integrity.")
 
 # Convert to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -26,7 +27,7 @@ gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 # Initialize the AprilTag detector using aruco
 # Available families: TAG16h5, TAG25h9, TAG36h11, etc.
 parameters = cv2.aruco.DetectorParameters()
-# dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
 detector = cv2.aruco.ArucoDetector(dictionary, parameters)
 
 # Detect tags
@@ -45,9 +46,9 @@ if ids is not None:
 
         print(f"Tag ID: {ids[i][0]}, Center: ({cX}, {cY})")
 
-    cv2.imshow("AprilTag Detection", image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # cv2.imshow("AprilTag Detection", image)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 else:
     print("No AprilTags detected.")
 
@@ -63,7 +64,7 @@ camera_matrix = np.array([
 dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
 # Real-world size of the AprilTag in meters (measure your printed tag)
-marker_size = 0.05  # 5cm - CHANGE THIS to your actual tag size
+marker_size = 0.05  # 5cm - CHANGE THIS 
 
 if ids is not None:
     for i, corner in enumerate(corners):
@@ -118,7 +119,9 @@ if ids is not None:
             print("Transformation Matrix:")
             print(transformation_matrix)
 
-    cv2.imshow("AprilTag Detection with Pose", image)
+    scale = 0.5
+    display_image = cv2.resize(image, None, fx=0.5, fy=0.5)
+    cv2.imshow("AprilTag Detection with Pose", display_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 else:
