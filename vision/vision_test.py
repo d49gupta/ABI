@@ -26,28 +26,45 @@ cv2.aruco.drawDetectedMarkers(image, corners, ids)
 print(f"Detected Tags: {ids.flatten()}")
 
 # CAMERA PARAMETERS - REPLACE WITH YOUR CALIBRATION
-focal_length = 15.12  # in pixels (Iphone 12 back camera)
+# focal_length = 3000 #15.12  # in pixels (Iphone 12 back camera)
+
+# Estimate the focal length
+focal_length_mm = 4.2  # actual physical focal length (not the 26mm "equivalent")
+sensor_width_mm = 4.55  # iPhone 12 sensor width
+image_width_pixels = image.shape[1]  # e.g., 3024 or 4032 pixels
+
+focal_length_pixels = (4.2 / 4.55) * image_width_pixels
+
+print(f"Calculated focal length: {focal_length_pixels:.2f} pixels")
+print(f"Image size: {image.shape[1]} x {image.shape[0]}\n")
+
 cx = image.shape[1] / 2
 cy = image.shape[0] / 2
 camera_matrix = np.array([
-    [focal_length, 0, cx],
-    [0, focal_length, cy],
+    [focal_length_pixels, 0, cx],
+    [0, focal_length_pixels, cy],
     [0, 0, 1]
 ], dtype=np.float32)
 dist_coeffs = np.zeros((4, 1), dtype=np.float32)  # change if you have distortion
 
-# TAG SIZE (meters) - CHANGE TO YOUR TAG SIZE
+# TAG SIZE (meters) 
 marker_size = 0.05
 
-# BOARD LAYOUT (meters) - CHANGE spacing to your real spacing
-board_spacing = 0.0709
-# Tag ID mapping (as you specified):
+# BOARD LAYOUT (meters)
+board_spacing = 0.0709+0.05
+# Tag ID mapping wrt to the board:
 # top-right -> 3, top-left -> 2, bottom-right -> 1, bottom-left -> 0
+# board_positions = {
+#     2: np.array([-board_spacing / 2,  board_spacing / 2, 0.0]),  # top-left
+#     3: np.array([ board_spacing / 2,  board_spacing / 2, 0.0]),  # top-right
+#     0: np.array([-board_spacing / 2, -board_spacing / 2, 0.0]),  # bottom-left
+#     1: np.array([ board_spacing / 2, -board_spacing / 2, 0.0]),  # bottom-right
+# }
 board_positions = {
-    2: np.array([-board_spacing / 2,  board_spacing / 2, 0.0]),  # top-left
-    3: np.array([ board_spacing / 2,  board_spacing / 2, 0.0]),  # top-right
-    0: np.array([-board_spacing / 2, -board_spacing / 2, 0.0]),  # bottom-left
-    1: np.array([ board_spacing / 2, -board_spacing / 2, 0.0]),  # bottom-right
+    2: np.array([-board_spacing / 2, -board_spacing / 2, 0.0]),  # top-left
+    3: np.array([ board_spacing / 2, -board_spacing / 2, 0.0]),  # top-right
+    0: np.array([-board_spacing / 2,  board_spacing / 2, 0.0]),  # bottom-left
+    1: np.array([ board_spacing / 2,  board_spacing / 2, 0.0]),  # bottom-right
 }
 
 # SOLVE PNP FOR EACH DETECTED TAG
@@ -84,10 +101,23 @@ for i, corner in enumerate(corners):
 # COMPUTE camera->board for each tag and collect estimates
 camera_T_board_estimates = []
 for tag_id, camera_T_tag in transforms.items():
-    tag_T_board = np.eye(4, dtype=np.float32)
-    tag_T_board[:3, 3] = -board_positions[tag_id]
-    camera_T_board = camera_T_tag @ tag_T_board
+    # Extract rotation and translation
+    R = camera_T_tag[:3, :3]
+    t = camera_T_tag[:3, 3]
+    
+    # Board origin in camera frame
+    t_board = t - R @ board_positions[tag_id]
+    
+    # Construct camera->board transform
+    camera_T_board = np.eye(4, dtype=np.float32)
+    camera_T_board[:3, :3] = R
+    camera_T_board[:3, 3] = t_board
+    
     camera_T_board_estimates.append(camera_T_board)
+    print(f"\nTag {tag_id} camera->board estimate:\n{camera_T_board}")
+
+for i, T in enumerate(camera_T_board_estimates):
+    print(f"\nEstimate {i}:\n{T}")
 
 if len(camera_T_board_estimates) == 0:
     raise RuntimeError("No valid camera->board estimates were computed.")
@@ -119,8 +149,20 @@ print(final_T)
 # OPTIONAL: draw the board center on the image
 # project the board-origin (0,0,0) in board frame to image using final_T inverse
 # compute board->camera by inverting final_T
-board_T_camera = np.linalg.inv(final_T)
-board_origin_in_camera = board_T_camera[:3, 3]
+# board_T_camera = np.linalg.inv(final_T)
+# board_origin_in_camera = board_T_camera[:3, 3]
+# OPTIONAL: draw the board center on the image
+# The board origin in camera frame is just the translation of camera->board
+board_origin_in_camera = final_T[:3, 3]
+
+# Project to pixel coordinates
+point_cam = board_origin_in_camera.reshape(3, 1)
+proj = camera_matrix @ point_cam
+px = int(proj[0, 0] / proj[2, 0])
+py = int(proj[1, 0] / proj[2, 0])
+
+cv2.circle(image, (px, py), 6, (0, 0, 255), -1)
+cv2.putText(image, 'Board Center', (px + 8, py), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 # project to pixel coordinates
 point_cam = board_origin_in_camera.reshape(3, 1)
