@@ -3,7 +3,7 @@ from geometry_msgs.msg import PoseStamped
 import rclpy
 from rclpy.node import Node
 from circle import calibrationBlock, conveyorBelt
-from error_plot import analyze_line_fit
+from error_plot import analyze_line_fit, degree_error
 import math
 import random
 import sys
@@ -35,7 +35,7 @@ class TrajectoryPublisher(Node):
         if calibration_type == FOUR_POINT_CALIBRATION:
             self.conveyor_belt = conveyorBelt(num_points=4)
         elif calibration_type == THREE_POINT_CALIBRATION:
-            self.conveyor_belt = conveyorBelt(num_points=3)
+            self.conveyor_belt = conveyorBelt(num_points=1)
             
         self.calibration_block = calibrationBlock(self.step_xy, self.conveyor_belt.conveyor_intervals)
         self.conveyor_belt.publish_markers()
@@ -46,6 +46,7 @@ class TrajectoryPublisher(Node):
         self.predicted_points = []
         self.actual_points = []
         self.axis_points = []
+        self.three_points = []
 
         # --- State variables ---
         self.get_logger().info("Current Circle Origin ({:.2f}, {:.2f})".format(self.calibration_block.conveyor_position, 0.0))
@@ -202,6 +203,7 @@ class TrajectoryPublisher(Node):
             self.publish_pose()
         else:
             self.get_logger().info("Initial Ascent complete")
+            self.three_points.append((self.x, self.y, self.z))
             self.state = "find_x_axis"
         return
     
@@ -233,12 +235,14 @@ class TrajectoryPublisher(Node):
         
         if finished_state:
             if self.state == "find_x_axis":
+                self.three_points.append((self.x, self.y, self.z))
                 self.get_logger().info("Find X axis complete")
                 self.state = "return_x_axis"
             elif self.state == "return_x_axis":
                 self.get_logger().info("Return X axis complete")
                 self.state = "find_y_axis"
             elif self.state == "find_y_axis":
+                self.three_points.append((self.x, self.y, self.z))
                 self.get_logger().info("Find Y axis complete")
                 self.state = "return_y_axis"
             else:
@@ -268,11 +272,18 @@ class TrajectoryPublisher(Node):
             self.publish_pose()
         else:
             if self.calibration_block.state == "complete":
-                print(self.actual_points)
-                print(self.predicted_points)
-                self.get_logger().info("4-Point Calibration Complete. Exiting.")
-                analyze_line_fit(self.actual_points, show_plot=False)
-                sys.exit(0)
+                if self.calibration_state == FOUR_POINT_CALIBRATION:
+                    print(self.actual_points)
+                    print(self.predicted_points)
+                    self.get_logger().info("4-Point Calibration Complete. Exiting.")
+                    analyze_line_fit(self.actual_points, show_plot=False)
+                    sys.exit(0)
+                else:
+                    self.get_logger().info("3-Point Calibration Complete. Exiting.")
+                    theta = degree_error(self.three_points)
+                    print("Calibration Accuracy:", theta)
+                    sys.exit(0)
+
             else:
                 self.get_logger().info("Reached calibration block. Restarting process.")
                 self.state = "init_descent"
