@@ -29,14 +29,16 @@ print(f"Detected Tags: {ids.flatten()}")
 # focal_length = 3000 #15.12  # in pixels (Iphone 12 back camera)
 
 # Estimate the focal length
-focal_length_mm = 4.2  # actual physical focal length (not the 26mm "equivalent")
-sensor_width_mm = 4.55  # iPhone 12 sensor width
-image_width_pixels = image.shape[1]  # e.g., 3024 or 4032 pixels
+# focal_length_mm = 4.2  # actual physical focal length (not the 26mm "equivalent")
+# sensor_width_mm = 4.55  # iPhone 12 sensor width
+# image_width_pixels = image.shape[1]  # e.g., 3024 or 4032 pixels
 
-focal_length_pixels = (4.2 / 4.55) * image_width_pixels
+# focal_length_pixels = (4.2 / 4.55) * image_width_pixels
 
-print(f"Calculated focal length: {focal_length_pixels:.2f} pixels")
-print(f"Image size: {image.shape[1]} x {image.shape[0]}\n")
+# print(f"Calculated focal length: {focal_length_pixels:.2f} pixels")
+# print(f"Image size: {image.shape[1]} x {image.shape[0]}\n")
+
+focal_length_pixels = 2215
 
 cx = image.shape[1] / 2
 cy = image.shape[0] / 2
@@ -51,7 +53,7 @@ dist_coeffs = np.zeros((4, 1), dtype=np.float32)  # change if you have distortio
 marker_size = 0.05
 
 # BOARD LAYOUT (meters)
-board_spacing = 0.0709+0.05
+board_spacing = 0.122 #0.0709+0.05
 # Tag ID mapping wrt to the board:
 # top-right -> 3, top-left -> 2, bottom-right -> 1, bottom-left -> 0
 # board_positions = {
@@ -114,13 +116,13 @@ for tag_id, camera_T_tag in transforms.items():
     camera_T_board[:3, 3] = t_board
     
     camera_T_board_estimates.append(camera_T_board)
-    print(f"\nTag {tag_id} camera->board estimate:\n{camera_T_board}")
+    print(f"\nTag {tag_id} camera->jig estimate:\n{camera_T_board}")
 
 for i, T in enumerate(camera_T_board_estimates):
     print(f"\nEstimate {i}:\n{T}")
 
 if len(camera_T_board_estimates) == 0:
-    raise RuntimeError("No valid camera->board estimates were computed.")
+    raise RuntimeError("No valid camera->jig estimates were computed.")
 
 # AVERAGE TRANSLATIONS
 translations = np.array([T[:3, 3] for T in camera_T_board_estimates])
@@ -143,7 +145,7 @@ final_T = np.eye(4, dtype=np.float32)
 final_T[:3, :3] = mean_rotation
 final_T[:3, 3] = mean_translation
 
-print("\nFinal Camera->Board Transform Estimate:")
+print("\nFinal Camera->jig Transform Estimate:")
 print(final_T)
 
 # OPTIONAL: draw the board center on the image
@@ -162,7 +164,7 @@ px = int(proj[0, 0] / proj[2, 0])
 py = int(proj[1, 0] / proj[2, 0])
 
 cv2.circle(image, (px, py), 6, (0, 0, 255), -1)
-cv2.putText(image, 'Board Center', (px + 8, py), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+cv2.putText(image, 'jig Center', (px + 8, py), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 # project to pixel coordinates
 point_cam = board_origin_in_camera.reshape(3, 1)
@@ -170,7 +172,7 @@ proj = camera_matrix @ point_cam
 proj = (proj / proj[2]).astype(int)
 px, py = int(proj[0]), int(proj[1])
 cv2.circle(image, (px, py), 6, (0, 0, 255), -1)
-cv2.putText(image, 'Board Center', (px + 8, py), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+cv2.putText(image, 'jig Center', (px + 8, py), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 
 scale = 0.5
