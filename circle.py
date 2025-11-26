@@ -118,14 +118,17 @@ class calibrationBlock(Node):
 
 
 class conveyorBelt(Node):
-        def __init__(self, conveyor_length=10.0):
+        def __init__(self, conveyor_length=10.0, num_points=4):
             super().__init__('marker_node')
             self.publisher_ = self.create_publisher(Marker, 'conveyor_marker', 10)
             self.conveyor_marker = Marker()
             self.conveyor_length = conveyor_length
 
-            useable_length = conveyor_length * 0.8
-            self.conveyor_intervals = [-useable_length / 2, 0, useable_length / 2, useable_length]
+            usable_length = conveyor_length * 0.8
+            if num_points == 1:
+                self.conveyor_intervals = [0]
+            else:
+                self.conveyor_intervals = [(-usable_length/2) + i*(usable_length/(num_points-1)) for i in range(num_points)]
 
         def make_conveyor_marker(self, width=2.0, color=(0.0, 0.0, 1.0), height=1.0):
             self.conveyor_marker.header.frame_id = "map"

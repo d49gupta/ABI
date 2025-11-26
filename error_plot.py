@@ -33,3 +33,20 @@ def analyze_line_fit(data, ideal_y=0.0, show_plot=True):
         plt.show()
 
     return
+
+def degree_error(points):
+    P0 = np.array(points[0])
+    P1 = np.array(points[1])
+    P2 = np.array(points[2])
+
+    v1 = P1 - P0
+    v2 = P2 - P0
+
+    dot = np.dot(v1, v2)
+    norm = np.linalg.norm(v1) * np.linalg.norm(v2)
+
+    cos_theta = dot / norm
+    cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+    theta = np.arccos(cos_theta) * 180 / 3.14159
+    return theta
