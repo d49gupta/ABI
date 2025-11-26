@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # INPUT IMAGE PATH - CHANGE TO YOUR IMAGE
-image_path = r"C:\Users\evanh\ABI\vision\april_tags.jpg"
+image_path = r"april_tags.jpg"
 
 # LOAD IMAGE
 image = cv2.imread(image_path)
