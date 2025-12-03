@@ -45,7 +45,7 @@ def find_jig_center(tag_center, numb_tags):
     return cx, cy
 
 if __name__=="__main__":
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         print("Error: Cannot open camera")
@@ -67,11 +67,11 @@ if __name__=="__main__":
             print("No april tags detected")
 
         cv2.circle(frame, (cx, cy), 10, (0, 0, 255), -1)
-        resized_img = cv2.resize(frame, (640, 640))
-        cv2.imshow("Detected Tags + Center", resized_img)
+        cv2.imshow("Detected Tags + Center", frame)
 
         # Press 'q' to quit
         if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.imwrite("CN720N_test.png", frame)
             break
 
     cap.release()
