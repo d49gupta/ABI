@@ -76,7 +76,7 @@ class CameraEsimate():
         camera_T_center = np.eye(4, dtype=np.float32)
         camera_T_center[:3, 3] = center_avg
         self.camera_T_center = camera_T_center
-        self.logger.info("Detected tags: %d -> X: %.3f, Y: %.3f, Z: %.3f", 
+        self.logger.info("%d, %.3f, %.3f, %.3f", 
                         len(self.camera_T_tag), center_avg[0], center_avg[1], center_avg[2])
         if project:
             self.project_center(frame)
