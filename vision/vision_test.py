@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # INPUT IMAGE PATH - CHANGE TO YOUR IMAGE
-image_path = r"april_tags.jpg"
+image_path = r"images/CN720N_test.png"
 
 # LOAD IMAGE
 image = cv2.imread(image_path)
@@ -38,19 +38,13 @@ print(f"Detected Tags: {ids.flatten()}")
 # print(f"Calculated focal length: {focal_length_pixels:.2f} pixels")
 # print(f"Image size: {image.shape[1]} x {image.shape[0]}\n")
 
-focal_length_pixels = 2215
-
-cx = image.shape[1] / 2
-cy = image.shape[0] / 2
-camera_matrix = np.array([
-    [focal_length_pixels, 0, cx],
-    [0, focal_length_pixels, cy],
-    [0, 0, 1]
-], dtype=np.float32)
-dist_coeffs = np.zeros((4, 1), dtype=np.float32)  # change if you have distortion
+fs = cv2.FileStorage("calibration.yaml", cv2.FILE_STORAGE_READ)
+camera_matrix = fs.getNode("camera_matrix").mat()
+dist_coeffs = fs.getNode("dist_coeffs").mat()
+fs.release()
 
 # TAG SIZE (meters) 
-marker_size = 0.05
+marker_size = 0.031
 
 # BOARD LAYOUT (meters)
 board_spacing = 0.122 #0.0709+0.05
