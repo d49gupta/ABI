@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from logger import CSVLogger
 
 class CameraEsimate():
     def __init__(self, tag_size=1.0, board_size = 10.0):
@@ -23,13 +24,14 @@ class CameraEsimate():
         self.board_size = board_size
         self.center_transform = {} # Transform from center frame to camera frame
         self.center_px = None
+        self.logger = CSVLogger("camera_center", log_dir="logs")
 
     def detect_tags(self, frame, project=True):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         tags, ids, rejected = self.detector.detectMarkers(gray)
         if ids is None:
-            # print("No tags detected.")
+            self.logger.warning("No tags detected")
             return False
 
         if project:
@@ -74,7 +76,8 @@ class CameraEsimate():
         camera_T_center = np.eye(4, dtype=np.float32)
         camera_T_center[:3, 3] = center_avg
         self.camera_T_center = camera_T_center
-
+        self.logger.info("Detected tags: %d -> X: %.3f, Y: %.3f, Z: %.3f", 
+                        len(self.camera_T_tag), center_avg[0], center_avg[1], center_avg[2])
         if project:
             self.project_center(frame)
 
