@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 class CameraEsimate():
-    def __init__(self, tag_size=1.0):
+    def __init__(self, tag_size=1.0, board_size = 10.0):
         parameters = cv2.aruco.DetectorParameters()
         dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
         self.detector = cv2.aruco.ArucoDetector(dictionary, parameters)
@@ -14,15 +14,14 @@ class CameraEsimate():
         self.dist = fs.getNode("dist_coeffs").mat()
         fs.release()
 
-        board_spacing = 0.15
         self.board_positions = {
-                                1: np.array([-board_spacing / 2, -board_spacing / 2, 0.0]),  # top-left
-                                0: np.array([ board_spacing / 2, -board_spacing / 2, 0.0]),  # top-right
-                                3: np.array([-board_spacing / 2,  board_spacing / 2, 0.0]),  # bottom-left
-                                2: np.array([ board_spacing / 2,  board_spacing / 2, 0.0]),  # bottom-right
+                                1: np.array([-board_size / 2, -board_size / 2, 0.0]),  # top-left
+                                0: np.array([ board_size / 2, -board_size / 2, 0.0]),  # top-right
+                                3: np.array([-board_size / 2,  board_size / 2, 0.0]),  # bottom-left
+                                2: np.array([ board_size / 2,  board_size / 2, 0.0]),  # bottom-right
                                 }
-
-        self.center_transform = None # Transform from center frame to camera frame
+        self.board_size = board_size
+        self.center_transform = {} # Transform from center frame to camera frame
         self.center_px = None
 
     def detect_tags(self, frame, project=True):
@@ -30,7 +29,7 @@ class CameraEsimate():
         
         tags, ids, rejected = self.detector.detectMarkers(gray)
         if ids is None:
-            print("No tags detected.")
+            # print("No tags detected.")
             return False
 
         if project:
@@ -68,29 +67,49 @@ class CameraEsimate():
 
             p_center_tag = self.board_positions[tag_id]
             p_center_cam = R @ p_center_tag + t
+            self.center_transform[tag_id] = p_center_cam
             center_sum += p_center_cam
 
         center_avg = center_sum / len(self.camera_T_tag)
         camera_T_center = np.eye(4, dtype=np.float32)
         camera_T_center[:3, 3] = center_avg
         self.camera_T_center = camera_T_center
-        print(center_avg)
 
         if project:
             self.project_center(frame)
 
     def project_center(self, frame):
-        x, y, z = self.camera_T_center[:3, 3]
-        x_norm = x / z
-        y_norm = y / z
-        u = self.K[0, 0] * x_norm + self.K[0, 2]
-        v = self.K[1, 1] * y_norm + self.K[1, 2]
-        self.center_px = (int(u), int(v))
-        cv2.circle(frame, camera.center_px, 5, (0, 0, 255), -1)
+            x, y, z = self.camera_T_center[:3, 3]
+            x_norm = x / z
+            y_norm = y / z
+            u = self.K[0, 0] * x_norm + self.K[0, 2]
+            v = self.K[1, 1] * y_norm + self.K[1, 2]
+            self.center_px = (int(u), int(v))
+            px = (int(u), int(v))
+            cv2.circle(frame, px, 5, (0, 0, 255), -1)
+
+    def project_all_centers(self, frame):
+        for tag_id, (x, y, z) in self.center_transform.items():
+            x_norm = x / z
+            y_norm = y / z
+            u = self.K[0, 0] * x_norm + self.K[0, 2]
+            v = self.K[1, 1] * y_norm + self.K[1, 2]
+            px = (int(u), int(v))
+            cv2.circle(frame, px, 5, (0, 0, 255), -1)
+            cv2.putText(
+            frame,
+            f"ID {tag_id}",
+            (px[0] + 10, px[1] - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 255, 0),
+            2,
+            cv2.LINE_AA
+        )
 
 if __name__=="__main__":
     cap = cv2.VideoCapture(0)
-    camera = CameraEsimate(0.031)
+    camera = CameraEsimate(0.075, 0.29)
 
     if not cap.isOpened():
         print("Error: Cannot open camera")
