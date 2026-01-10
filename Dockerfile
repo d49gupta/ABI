@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     python3-colcon-common-extensions \
     build-essential \
-    ros-humble-rviz2 \
+    # ros-humble-rviz2 \
     # ros-humble-gazebo-ros-pkgs \
     # ros-humble-rosbag2 \
     # ros-humble-rosbag2-storage \
@@ -19,32 +19,32 @@ RUN apt-get update && apt-get install -y \
     # ros-humble-foxglove-bridge \
     raspi-config \
     ros-humble-cv-bridge \
-    libopencv-dev \
+    # libopencv-dev \
     python3-opencv \
-    libx11-xcb1 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render0 \
-    libxcb-shape0 \
-    libxcb-shm0 \
-    libxcb-sync1 \
-    libxcb-util1 \
-    libxcb-xfixes0 \
-    libxkbcommon-x11-0 \
-    qtbase5-dev \
-    qtchooser \
-    qt5-qmake \
-    qtbase5-dev-tools \
-    x11-apps \
-    x11-utils \
+    # libx11-xcb1 \
+    # libxcb-icccm4 \
+    # libxcb-image0 \
+    # libxcb-keysyms1 \
+    # libxcb-randr0 \
+    # libxcb-render0 \
+    # libxcb-shape0 \
+    # libxcb-shm0 \
+    # libxcb-sync1 \
+    # libxcb-util1 \
+    # libxcb-xfixes0 \
+    # libxkbcommon-x11-0 \
+    # qtbase5-dev \
+    # qtchooser \
+    # qt5-qmake \
+    # qtbase5-dev-tools \
+    # x11-apps \
+    # x11-utils \
     i2c-tools \
     libi2c-dev \
     libgpiod-dev \
     nano \
     libxml2-utils \
-    gdb \
+    # gdb \
     && rm -rf /var/lib/apt/lists/*
 
 # Set up a ROS workspace
@@ -68,7 +68,7 @@ RUN python3 -m venv /root/ros2_venv && \
         numpy
 
 # Install rosbags/bagpy (use venv pip)
-RUN /root/ros2_venv/bin/pip install rosbags bagpy
+# RUN /root/ros2_venv/bin/pip install rosbags bagpy
 
 # Auto-source ROS and venv for interactive sessions
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
