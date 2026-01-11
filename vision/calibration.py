@@ -43,12 +43,12 @@ class Calibration:
     def save(self):
         K = np.array(self.K)
         dist = np.array(self.dist)
-        fs = cv2.FileStorage("calibration.yaml", cv2.FILE_STORAGE_WRITE)
+        fs = cv2.FileStorage("calibration_arducam.yaml", cv2.FILE_STORAGE_WRITE)
         fs.write("camera_matrix", K)
         fs.write("dist_coeffs", dist)
         fs.release()
 
-        print("Saved calibration to calibration.yaml")
+        print("Saved calibration to calibration_arducam.yaml")
 
 if __name__ == "__main__":
     calib = Calibration()
