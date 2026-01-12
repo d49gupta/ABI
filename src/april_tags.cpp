@@ -7,7 +7,7 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     std::cout<<"Number of tags detected: " << this->num_tags << std::endl;
     this->detected_tags.clear();
 
-    for (int i = 0; i < this->num_tags; i++) {
+    for (size_t i = 0; i < this->num_tags; i++) {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
         this->detected_tags.push_back({det->id, det->c[0], det->c[1]});
@@ -25,14 +25,14 @@ size_t AprilTagDetector::detectionCount()
 std::string AprilTagDetector::JSONOutput()
 {
     std::stringstream ss;
-    ss << "{ \"count\": " << current_tags.size() << ", \"tags\": [";
+    ss << "{ \"count\": " << detected_tags.size() << ", \"tags\": [";
 
-    for (size_t i = 0; i < current_tags.size(); i++) {
-        ss << "{\"id\":" << current_tags[i].id 
-        << ",\"x\":" << current_tags[i].x 
-        << ",\"y\":" << current_tags[i].y << "}";
+    for (size_t i = 0; i < this->num_tags; i++) {
+        ss << "{\"id\":" << detected_tags[i].id 
+        << ",\"x\":" << detected_tags[i].center_x 
+        << ",\"y\":" << detected_tags[i].center_y << "}";
         
-        if (i < current_tags.size() - 1) ss << ",";
+        if (i < detected_tags.size() - 1) ss << ",";
     }
     ss << "]}";
     return ss.str();

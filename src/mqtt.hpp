@@ -7,7 +7,7 @@
 class Publisher
 {
 public:
-    void Publisher() {}
+    Publisher();
     bool sendMessage(const std::string& topic, const std::string& message);
     ~Publisher() 
     {

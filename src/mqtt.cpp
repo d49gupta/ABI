@@ -1,6 +1,6 @@
 #include "mqtt.hpp"
 
-void Publisher::Publisher()
+Publisher::Publisher()
 {
     mosquitto_lib_init();
 
@@ -27,7 +27,8 @@ bool Publisher::sendMessage(const std::string& topic, const std::string& message
         std::cerr << "Error publishing: " << mosquitto_strerror(rc) << std::endl;
         return false;
     }
-
+    
+    std::cout<<"Message Sent"<<std::endl;
     mosquitto_loop(mosq, 0, 1);
     return true;
 }
