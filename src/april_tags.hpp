@@ -8,9 +8,16 @@
 struct AprilTag
 {
     int id;
+    double x;
+    double y;
     double center_x;
     double center_y;
-    double H[9];
+};
+
+struct Point2D
+{
+    double x;
+    double y;
 };
 
 class AprilTagDetector 
@@ -32,6 +39,7 @@ public:
     bool detectTags(image_u8_t* img);
     size_t detectionCount();
     std::string JSONOutput();
+    Point2D project_relative_point(apriltag_detection_t *det, double offset_x, double offset_y);
 
     size_t num_tags;
     std::vector<AprilTag> detected_tags;

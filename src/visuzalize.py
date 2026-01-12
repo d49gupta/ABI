@@ -26,10 +26,16 @@ def on_message(client, userdata, msg):
         for tag in tags:
             x = int(tag["x"])
             y = int(tag["y"])
+            center_x = int(tag["center_x"])
+            center_y = int(tag["center_y"])
             tag_id = tag["id"]
 
             cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
             cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            
+            cv2.circle(canvas, (center_x, center_y), 5, (255, 255, 0), -1)
+            cv2.putText(canvas, f"ID: {tag_id}", (center_x + 10, center_y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         print(f"Received {data['count']} tags")
