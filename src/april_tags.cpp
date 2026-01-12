@@ -48,6 +48,7 @@ size_t AprilTagDetector::detectionCount()
 
 std::string AprilTagDetector::JSONOutput()
 {
+    std::stringstream ss;
     ss << "{ \"count\": " << detected_tags.size() << ", \"tags\": [";
 
     for (size_t i = 0; i < detected_tags.size(); i++) {
