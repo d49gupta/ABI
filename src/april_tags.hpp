@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-
+#include <unordered_map>
 struct AprilTag
 {
     int id;
@@ -23,11 +23,17 @@ struct Point2D
 class AprilTagDetector 
 {
 public:
-    AprilTagDetector() 
+    AprilTagDetector(int tag_size, int offset) : tag_size(tag_size), offset(offset)
     {
+        tag_offset = offset / (2.0 * tag_size);
         tf = tag36h11_create();
         td = apriltag_detector_create();
         apriltag_detector_add_family(td, tf);
+
+        tag_positions[0] = { tag_offset, -tag_offset};
+        tag_positions[1] = {-tag_offset, -tag_offset};
+        tag_positions[2] = { tag_offset,  tag_offset};
+        tag_positions[3] = {-tag_offset,  tag_offset};
     }
 
     ~AprilTagDetector() 
@@ -47,4 +53,8 @@ public:
 private:
     apriltag_family_t *tf;
     apriltag_detector_t *td;
+    int tag_size; // in cm
+    int offset; // in cm
+    float tag_offset;
+    unorderd_map<int, Point2D> tag_positions;
 };

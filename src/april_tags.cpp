@@ -16,7 +16,7 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         td.x = det->c[0];
         td.y = det->c[1];
 
-        Point2D p = project_relative_point(det, 0.0, 0.0);
+        Point2D p = project_relative_point(det, tag_positions[det->id].x, tag_positions[det->id].y);
         td.center_x = p.x;
         td.center_y = p.y;
         this->detected_tags.push_back(td);

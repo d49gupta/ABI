@@ -4,7 +4,7 @@
 int main()
 {
     Publisher publisher;
-    AprilTagDetector detector;
+    AprilTagDetector detector(7.5, 29);
 
     int width = 640;
     int height = 480;
