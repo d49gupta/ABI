@@ -10,6 +10,7 @@ struct AprilTag
     int id;
     double center_x;
     double center_y;
+    double H[9];
 };
 
 class AprilTagDetector 

@@ -10,7 +10,15 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     for (size_t i = 0; i < this->num_tags; i++) {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
-        this->detected_tags.push_back({det->id, det->c[0], det->c[1]});
+        AprilTag td;
+
+	td.id = det->id;
+	td.center_x = det->c[0];
+	td.center_y = det->c[1];
+	for (int j = 0; j < 9; j++)
+	    td.H[j] = det->H->data[j];
+
+        this->detected_tags.push_back(td);
     }
 
     apriltag_detections_destroy(detections);
