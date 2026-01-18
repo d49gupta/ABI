@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 # --- CONFIGURATION ---
-MQTT_BROKER = "192.168.0.40"
+MQTT_BROKER = "2607:fea8:1d66:2700::2d21" # Evan's Connect
 MQTT_TOPIC = "detections"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
