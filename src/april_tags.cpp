@@ -44,7 +44,7 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     double dy = pixel.y - cy;
     
     // Distance from center (normalized)
-    double r = sqrt(dx*dx + dy*dy);
+    double r = std::sqrt(dx*dx + dy*dy);
     
     // Radial correction factor (tune DISTORTION_K experimentally)
     const double DISTORTION_K = 0.05;  // Start with 0.05, adjust based on testing
@@ -55,7 +55,7 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
         pixel.x += (dx / r) * correction;  // Move outward (+ for barrel)
         pixel.y += (dy / r) * correction;  // or inward (- for pincushion)
     }
-    
+
     return pixel;
 }
 

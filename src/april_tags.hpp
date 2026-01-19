@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <cmath>
 struct AprilTag
 {
     int id;
