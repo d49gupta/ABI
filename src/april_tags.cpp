@@ -35,7 +35,7 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     double z_prime = h[6] * offset_x + h[7] * offset_y + h[8];
 
     Point2D pixel;
-    // double fixed_offset = 0.8;
+    
     pixel.x = (x_prime / z_prime);
     pixel.y = (y_prime / z_prime);
 
@@ -53,7 +53,7 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     double r = std::sqrt(dx * dx + dy * dy);
     
     // Radial correction factor (tune this value experimentally)
-    const double DISTORTION_K = 0.001;  // Start with 0.05, adjust as needed
+    const double DISTORTION_K = -0.05;  // Start with 0.05, adjust as needed
     double correction = r * DISTORTION_K;
     
     // Apply correction along radial direction
