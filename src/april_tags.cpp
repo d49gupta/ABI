@@ -57,7 +57,8 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     double correction = r * DISTORTION_K;
     
     // Apply correction along radial direction
-    if (r > 0) {
+    //if (r > 0) {
+    if (false) {
         pixel.x += (dx / r) * correction;  // Use + for barrel distortion
         pixel.y += (dy / r) * correction;  // Use - for pincushion distortion
     }

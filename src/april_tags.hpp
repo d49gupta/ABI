@@ -35,6 +35,7 @@ public:
         tag_positions[1] = {-tag_offset, -tag_offset};
         tag_positions[2] = {tag_offset,  tag_offset};
         tag_positions[3] = {-tag_offset,  tag_offset};
+	tag_positions[4] = {0, 0};
     }
 
     ~AprilTagDetector() 

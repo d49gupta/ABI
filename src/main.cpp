@@ -7,7 +7,7 @@ int main()
     // AprilTagDetector detector(7.5, 29); Dharama 
     // 2.5 = distance from edge of tag to the center of the tag
     // 6 = distance from the center of tag to the center of the circle
-    AprilTagDetector detector(2.5, 6); // Evan Test page
+    AprilTagDetector detector(2.5, 5); // Evan Test page
 
     int width = 640;
     int height = 480;
