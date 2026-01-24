@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <cmath>
 struct AprilTag
 {
     int id;
@@ -30,10 +31,11 @@ public:
         td = apriltag_detector_create();
         apriltag_detector_add_family(td, tf);
 
-        tag_positions[0] = {-tag_offset, -tag_offset};
-        tag_positions[1] = {tag_offset, -tag_offset};
-        tag_positions[2] = {-tag_offset,  tag_offset};
-        tag_positions[3] = {tag_offset,  tag_offset};
+        tag_positions[0] = {tag_offset, -tag_offset};
+        tag_positions[1] = {-tag_offset, -tag_offset};
+        tag_positions[2] = {tag_offset,  tag_offset};
+        tag_positions[3] = {-tag_offset,  tag_offset};
+	tag_positions[4] = {0, 0};
     }
 
     ~AprilTagDetector() 

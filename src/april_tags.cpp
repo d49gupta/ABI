@@ -35,8 +35,34 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     double z_prime = h[6] * offset_x + h[7] * offset_y + h[8];
 
     Point2D pixel;
-    pixel.x = x_prime / z_prime;
-    pixel.y = y_prime / z_prime;
+    
+    pixel.x = (x_prime / z_prime);
+    pixel.y = (y_prime / z_prime);
+
+    // Apply radial distortion correction
+    const double IMAGE_WIDTH = 640.0;   // Adjust to your camera resolution
+    const double IMAGE_HEIGHT = 480.0;  // Adjust to your camera resolution
+    const double cx = IMAGE_WIDTH / 2.0;
+    const double cy = IMAGE_HEIGHT / 2.0;
+    
+    // Vector from image center to projected point
+    double dx = pixel.x - cx;
+    double dy = pixel.y - cy;
+    
+    // Distance from center
+    double r = std::sqrt(dx * dx + dy * dy);
+    
+    // Radial correction factor (tune this value experimentally)
+    const double DISTORTION_K = -0.25;  // Start with 0.05, adjust as needed
+    double correction = r * DISTORTION_K;
+    
+    // Apply correction along radial direction
+    //if (r > 0) {
+    if (false) {
+        pixel.x += (dx / r) * correction;  // Use + for barrel distortion
+        pixel.y += (dy / r) * correction;  // Use - for pincushion distortion
+    }
+
 
     return pixel;
 }

@@ -36,7 +36,7 @@ def on_message(client, userdata, msg):
 
             cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
             cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
             
             # Accumulate the estimated centers
             sum_cx += tag["center_x"]
