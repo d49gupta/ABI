@@ -1,6 +1,6 @@
 #include "pencil.hpp"
 
-GT2::GT2(int size) : voltageCache(size)
+GT2::GT2(int size) : cache(size)
 {
     this->adc = openI2C();
 
@@ -36,7 +36,7 @@ int GT2::openI2C()
     return file;
 }
 
-void GTS::readVoltage()
+void GTS::readRaw()
 {
     uint8_t data[2];
     if (read(this->adc, data, 2) != 2) 
@@ -49,11 +49,28 @@ void GTS::readVoltage()
     if (raw_adc & 0x8000) 
         raw_adc -= 0x10000;
 
-    double voltage = (raw_adc * this->FSR) / 32768.0;
-    this->voltageCache.enqueue(static_cast<int>(voltage * 1000));
+    this->cache.enqueue(static_cast<int>(raw_adc));
 }
 
-GT2::getLatestVoltage()
+int GT2::convertToMillivolts(int bits)
 {
-    return this->voltageCache.newestValue();
+    double voltage = (bits * this->FSR) / 32768.0;
+    return static_cast<int>(voltage * 1000);
+}
+
+int GT2::convertToMilliamps(int bits)
+{
+    double current = ((bits) / 32767.0) * (this->max_ma - this->min_ma) + this->min_ma;
+    return static_cast<int>(current);
+}
+
+double GT2::convertToMillimeters(int bits)
+{
+    double millimeters = (bits / 32767.0) * this->max_mm;
+    return millimeters;
+}
+
+float GT2::getLatestReading()
+{
+    return this->cache.newestValue();
 }

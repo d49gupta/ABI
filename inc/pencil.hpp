@@ -25,12 +25,19 @@ public:
     GT2(int size);
     ~GT2();
     int openI2C();
-    int readVoltage(); // Return voltage in millivolts
-    int getLatestVoltage();
+    int readRaw();
+    int getLatestReading();
+    int convertToMillivolts(int bits)
+    int convertToMilliamps(int bits);
+    double convertToMillimeters(int bits);
+    
 private:
     int adc;
     double FSR = 6.144;
-    dataCache<int> voltageCache;
+    double min_ma = 4.0;
+    double max_ma = 20.0;
+    double max_mm = 12.0;
+    dataCache<int> cache;
 };
 
 #endif

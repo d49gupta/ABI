@@ -24,9 +24,9 @@ int main()
         publisher.sendMessage("camera/detections", jsonOutput);
         std::cin.ignore(size / 2);
 
-        pencil.readVoltage();
-        int voltage = pencil.getLatestVoltage();
-        publisher.sendMessage("pencil/voltage", std::to_string(voltage));
+        pencil.readRaw();
+        int reading = pencil.getLatestReading();
+        publisher.sendMessage("pencil/reading", std::to_string(reading));
     }
     
     return 0;
