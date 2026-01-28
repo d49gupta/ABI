@@ -16,7 +16,7 @@ pkg_check_modules(APRILTAG REQUIRED apriltag)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
 
 include_directories(
-  src
+  inc
   ${OpenCV_INCLUDE_DIRS}
   ${APRILTAG_INCLUDE_DIRS}
   ${MOSQUITTO_INCLUDE_DIRS}
