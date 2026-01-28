@@ -9,7 +9,7 @@ GT2::GT2(int size) : cache(size)
         std::cerr << "Failed to write to config register" << std::endl;
     // std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-    uint8_t conv_reg = CONV_REG_ADDR;
+    uint8_t conv_reg = CONVERSION_REG;
     if (write(this->adc, &conv_reg, 1) != 1) 
         std::cerr << "Failed to set conversion register pointer" << std::endl;
     // std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -36,14 +36,13 @@ int GT2::openI2C()
     return file;
 }
 
-void GTS::readRaw()
+void GT2::readRaw()
 {
     PencilReading reading;
     uint8_t data[2];
     if (read(this->adc, data, 2) != 2) 
     {
         std::cerr << "Failed to read conversion data\n";
-        return -1;
     }
 
     int16_t raw_adc = (data[0] << 8) | data[1];
