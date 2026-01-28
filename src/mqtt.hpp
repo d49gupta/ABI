@@ -1,8 +1,10 @@
+#ifndef MQTT_HPP
+#define MQTT_HPP
+
 #include <iostream>
 #include <mosquitto.h>
 #include <string.h>
 #include <unistd.h>
-
 
 class Publisher
 {
@@ -19,3 +21,5 @@ private:
     int rc;
 
 };
+
+#endif

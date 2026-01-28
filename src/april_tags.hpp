@@ -1,3 +1,6 @@
+#ifndef APRIL_TAGS_HPP
+#define APRIL_TAGS_HPP
+
 #include <apriltag/apriltag.h>
 #include <apriltag/tag36h11.h>
 #include <vector>
@@ -60,3 +63,5 @@ private:
     float tag_offset;
     std::unordered_map<int, Point2D> tag_positions;
 };
+
+#endif

@@ -5,7 +5,7 @@ import numpy as np
 
 # --- CONFIGURATION ---
 MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
-MQTT_TOPIC = "detections"
+MQTT_TOPIC = "camera/detections"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 

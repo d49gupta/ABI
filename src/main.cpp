@@ -1,5 +1,6 @@
 #include "april_tags.hpp"
 #include "mqtt.hpp"
+#include "pencil.hpp"
 
 int main()
 {
@@ -8,6 +9,7 @@ int main()
     // 2.5 = distance from edge of tag to the center of the tag
     // 6 = distance from the center of tag to the center of the circle
     AprilTagDetector detector(2.5, 5); // Evan Test page
+    GT2 pencil(30);
 
     int width = 640;
     int height = 480;
@@ -19,8 +21,13 @@ int main()
         image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
         detector.detectTags(&img);
         std::string jsonOutput = detector.JSONOutput();
-        publisher.sendMessage("detections", jsonOutput);
+        publisher.sendMessage("camera/detections", jsonOutput);
         std::cin.ignore(size / 2);
+
+        pencil.readVoltage();
+        int voltage = pencil.getLatestVoltage();
+        publisher.sendMessage("pencil/voltage", std::to_string(voltage));
     }
+    
     return 0;
 }

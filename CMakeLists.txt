@@ -10,6 +10,7 @@ endif()
 
 find_package(OpenCV REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(Threads REQUIRED)
 
 pkg_check_modules(APRILTAG REQUIRED apriltag)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
