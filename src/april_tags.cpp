@@ -19,6 +19,11 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         Point2D p = project_relative_point(det, tag_positions[det->id].x, tag_positions[det->id].y);
         td.center_x = p.x;
         td.center_y = p.y;
+        
+        double dx = det->p[1][0] - det->p[0][0];
+        double dy = det->p[1][1] - det->p[0][1];
+        td.scale = this->tag_size / std::sqrt(dx*dx + dy*dy);
+        
         this->detected_tags.push_back(td);
     }
 
@@ -83,7 +88,8 @@ std::string AprilTagDetector::JSONOutput()
         << "\"x\":"        << detected_tags[i].x  << ","
         << "\"y\":"        << detected_tags[i].y  << ","
         << "\"center_x\":" << detected_tags[i].center_x << ","
-        << "\"center_y\":" << detected_tags[i].center_y
+        << "\"center_y\":" << detected_tags[i].center_y << ","
+        << "\"scale\":"  << detected_tags[i].scale <<
         << "}";
         
         if (i < detected_tags.size() - 1) ss << ",";

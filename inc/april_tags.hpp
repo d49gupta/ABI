@@ -16,6 +16,7 @@ struct AprilTag
     double y;
     double center_x;
     double center_y;
+    double scale;
 };
 
 struct Point2D
