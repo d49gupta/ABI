@@ -22,6 +22,11 @@
 #define CFG_LOW 0x83
 #define Z_THRESH 5
 
+#define MIN_BIT 5498
+#define MAX_BIT 26759
+#define MIN_DIST = 0.0
+#define MAX_DIST = 12.97
+
 struct PencilReading
 {
     int raw;

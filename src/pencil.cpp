@@ -70,8 +70,8 @@ int GT2::convertToMilliamps(int bits)
 
 double GT2::convertToMillimeters(int bits)
 {
-    double millimeters = (bits / 32767.0) * this->max_mm;
-    return millimeters;
+    double distance = (double)(bits - MIN_BIT) * (MAX_DIST - MIN_DIST) / (MAX_BIT - MIN_BIT);    
+    return distance;
 }
 
 PencilReading GT2::getLatestReading()
