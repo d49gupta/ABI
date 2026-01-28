@@ -1,2 +1,3 @@
-ABI/
+build
 *.pyc
+logs

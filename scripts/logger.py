@@ -10,11 +10,11 @@ class CSVLogger:
         self.logger.setLevel(level)
 
         if not self.logger.handlers:
-            handler = logging.FileHandler(self.log_path, mode="a")
+            handler = logging.FileHandler(self.log_path, mode="w")
 
             formatter = logging.Formatter(
-                "%(asctime)s,%(module)s,%(lineno)d,%(levelname)s,%(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"
+                "%(asctime)s.%(msecs)03d,%(relativeCreated)d,%(module)s,%(lineno)d,%(levelname)s,%(message)s",
+                datefmt="%H:%M:%S"
             )
 
             handler.setFormatter(formatter)
@@ -22,7 +22,7 @@ class CSVLogger:
 
         if os.path.getsize(self.log_path) == 0:
             with open(self.log_path, "w") as f:
-                f.write("timestamp,module,line,level,message\n")
+                f.write("timestamp,ms_since_start,module,line,level,message\n")
 
     def set_level(self, level):
         self.logger.setLevel(level)
