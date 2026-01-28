@@ -38,6 +38,7 @@ int GT2::openI2C()
 
 void GTS::readRaw()
 {
+    PencilReading reading;
     uint8_t data[2];
     if (read(this->adc, data, 2) != 2) 
     {
@@ -49,7 +50,11 @@ void GTS::readRaw()
     if (raw_adc & 0x8000) 
         raw_adc -= 0x10000;
 
-    this->cache.enqueue(static_cast<int>(raw_adc));
+
+    reading.raw = static_cast<int>(raw_adc);
+    reading.millimeters = convertToMillimeters(raw_adc);
+    reading.flag = (std::abs(reading.millimeters) < Z_THRESH);
+    this->cache.enqueue(reading);
 }
 
 int GT2::convertToMillivolts(int bits)
@@ -70,7 +75,20 @@ double GT2::convertToMillimeters(int bits)
     return millimeters;
 }
 
-float GT2::getLatestReading()
+PencilReading GT2::getLatestReading()
 {
     return this->cache.newestValue();
+}
+
+std::string GT2::JSONOutput()
+{
+    std::stringstream ss;
+    PencilReading reading = getLatestReading();
+    ss << "{"
+       << "\"raw\": " << reading.raw << ", "
+       << "\"millimeters\": " << std::fixed << std::setprecision(4) << reading.millimeters << ", "
+       << "\"flag\": " << std::boolalpha << reading.flag
+       << "}";
+
+    return ss.str();
 }

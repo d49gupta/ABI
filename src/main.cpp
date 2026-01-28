@@ -25,8 +25,8 @@ int main()
         std::cin.ignore(size / 2);
 
         pencil.readRaw();
-        int reading = pencil.getLatestReading();
-        publisher.sendMessage("pencil/reading", std::to_string(reading));
+        std::string jsonReading = pencil.JSONOutput();
+        publisher.sendMessage("pencil/reading", jsonReading);
     }
     
     return 0;

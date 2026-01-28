@@ -10,6 +10,7 @@
 #include <cstring>
 #include <chrono>
 #include <thread>
+#include <sstream>
 #include "dataCache.hpp"
 
 #define ADC_ADDR 0x48
@@ -18,6 +19,14 @@
 
 #define CFG_HIGH 0xC0
 #define CFG_LOW 0x83
+#define Z_THRESH 5
+
+struct PencilReading
+{
+    int raw;
+    double millimeters;
+    bool flag;
+};
 
 class GT2
 {
@@ -25,11 +34,12 @@ public:
     GT2(int size);
     ~GT2();
     int openI2C();
-    int readRaw();
-    int getLatestReading();
+    void readRaw();
+    PencilReading getLatestReading();
     int convertToMillivolts(int bits)
     int convertToMilliamps(int bits);
     double convertToMillimeters(int bits);
+    std::string JSONOutput();
     
 private:
     int adc;
@@ -37,7 +47,7 @@ private:
     double min_ma = 4.0;
     double max_ma = 20.0;
     double max_mm = 12.0;
-    dataCache<int> cache;
+    dataCache<PencilReading> cache;
 };
 
 #endif

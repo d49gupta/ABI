@@ -32,10 +32,12 @@ def on_message(client, userdata, msg):
             print(f"Error processing message on {msg.topic}: {e}")
 
 def receivePencil(payload):
-    reading = int(payload)
-    distance = reading * 12.0 / 32767
-    pencil_logger.info("%d, %.4f", reading, distance)
-    print(f"Received Pencil reading: {reading} bits")
+    data = json.loads(payload)
+    raw = int(data["raw"])
+    distance = float(data["millimeters"])
+    flag = int(data["flag"])
+    pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
+    print(f"Received Pencil reading: {raw} bits")
 
 def receiveCamera(payload):
     global canvas
