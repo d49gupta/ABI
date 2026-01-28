@@ -16,19 +16,18 @@ int main()
     int size = width * height;
     unsigned char* buffer = new unsigned char[size];
 
-    while (true)
-    // while (std::cin.read((char*)buffer, size)) 
+    while (std::cin.read((char*)buffer, size)) 
     {
-        //image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
-        //detector.detectTags(&img);
-        //std::string jsonOutput = detector.JSONOutput();
-        //publisher.sendMessage("camera/detections", jsonOutput);
-        //std::cin.ignore(size / 2);
+        image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
+        detector.detectTags(&img);
+        std::string jsonOutput = detector.JSONOutput();
+        publisher.sendMessage("camera/detections", jsonOutput);
+        std::cin.ignore(size / 2);
 
         pencil.readRaw();
         std::string jsonReading = pencil.JSONOutput();
         publisher.sendMessage("pencil/reading", jsonReading);
-	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
   
     return 0;

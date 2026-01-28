@@ -10,7 +10,7 @@ class CSVLogger:
         self.logger.setLevel(level)
 
         if not self.logger.handlers:
-            handler = logging.FileHandler(self.log_path, mode="a")
+            handler = logging.FileHandler(self.log_path, mode="w")
 
             formatter = logging.Formatter(
                 "%(asctime)s,%(module)s,%(lineno)d,%(levelname)s,%(message)s",
