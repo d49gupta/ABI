@@ -22,10 +22,10 @@
 #define CFG_LOW 0x83
 #define Z_THRESH 5
 
-#define MIN_BIT 5498
-#define MAX_BIT 26759
-#define MIN_DIST = 0.0
-#define MAX_DIST = 12.97
+#define MIN_BIT 5485
+#define MAX_BIT 26763
+#define MIN_DIST 0.0
+#define MAX_DIST 12.97
 
 struct PencilReading
 {
@@ -42,7 +42,7 @@ public:
     int openI2C();
     void readRaw();
     PencilReading getLatestReading();
-    int convertToMillivolts(int bits)
+    int convertToMillivolts(int bits);
     int convertToMilliamps(int bits);
     double convertToMillimeters(int bits);
     std::string JSONOutput();

@@ -52,7 +52,7 @@ void GT2::readRaw()
 
     reading.raw = static_cast<int>(raw_adc);
     reading.millimeters = convertToMillimeters(raw_adc);
-    reading.flag = (std::abs(reading.millimeters) < Z_THRESH);
+    reading.flag = !(std::abs(reading.millimeters) < Z_THRESH);
     this->cache.enqueue(reading);
 }
 
@@ -88,6 +88,7 @@ std::string GT2::JSONOutput()
        << "\"millimeters\": " << std::fixed << std::setprecision(4) << reading.millimeters << ", "
        << "\"flag\": " << std::boolalpha << reading.flag
        << "}";
+    std::cout<<reading.millimeters<<std::endl;
 
     return ss.str();
 }

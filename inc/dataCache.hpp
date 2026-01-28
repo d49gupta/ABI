@@ -7,7 +7,7 @@ template <typename T>
 class dataCache
 {
 public:
-    datacache(int size) : size(size), buffer(size), head(0), tail(0), count(0) {}
+    dataCache(int size) : size(size), buffer(size), head(0), tail(0), count(0) {}
     dataCache() : size(0), head(0), tail(0), count(0) {} //default constructor
 
     bool isFull() const
