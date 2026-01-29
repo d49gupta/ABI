@@ -19,7 +19,6 @@ PENCIL_HZ = 100
 CAMERA_HZ = 10
 
 mqtt_lock = threading.Lock()
-
 running = True
 
 def signal_handler(sig, frame):
