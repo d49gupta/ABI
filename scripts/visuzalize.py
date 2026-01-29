@@ -5,15 +5,16 @@ import numpy as np
 from logger import CSVLogger
 
 # --- CONFIGURATION ---
-MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
-camera_logger = CSVLogger(name="camera_logger", log_dir="../logs")
-pencil_logger = CSVLogger(name="pencil_logger", log_dir="../logs")
+camera_logger = CSVLogger(name="camera", log_dir="../logs")
+pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")

@@ -7,7 +7,8 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     std::cout<<"Number of tags detected: " << this->num_tags << std::endl;
     this->detected_tags.clear();
 
-    for (size_t i = 0; i < this->num_tags; i++) {
+    for (size_t i = 0; i < this->num_tags; i++) 
+    {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
         AprilTag td;
