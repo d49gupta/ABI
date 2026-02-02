@@ -1,3 +1,4 @@
+from xmlrpc import client
 import paho.mqtt.client as mqtt
 import json
 import cv2
@@ -18,15 +19,25 @@ class CameraDetection:
     center_y: int
     scale: float
 
-# --- CONFIG ---
-# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
-MQTT_BROKER = "127.0.0.1"
-CAMERA_TOPIC = "camera/detections"
-PENCIL_TOPIC = "pencil/reading"
-WINDOW_WIDTH = 640
-WINDOW_HEIGHT = 480
+@dataclass
+class MQTTState:
+    mqtt_broker: str = "127.0.0.1"
+    camera_topic: str = "camera/detections"
+    pencil_topic: str = "pencil/reading"
+    port: int = 1883
+    client = None
+
+@dataclass
+class CorrectionState:
+    dx: float = 0.0
+    dy: float = 0.0
+    dz: float = 0.0
 
 # --- GLOBALS ---
+# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+MQTT_BROKER = "127.0.0.1"
+WINDOW_WIDTH = 640
+WINDOW_HEIGHT = 480
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 camera_logger = CSVLogger(name="camera", log_dir="../logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
@@ -34,35 +45,35 @@ img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
 pencil_offset_x = -50  # in mm
 pencil_offset_y = 0    # in mm
-dx = 0
-dy = 0
-dz = 0
+
+# --- STATE ---
+correction = CorrectionState
+publisher = MQTTState(mqtt_broker=MQTT_BROKER)
 pencil_sample = PencilReading(0, 0.0, 0)
 camera_sample = CameraDetection(0, 0.0, 0)
 
 def calculate_pencil_position():
-    global dx, dy, dz
     if camera_sample.center_x == 0 and camera_sample.center_y == 0:
         return None
 
     scale = camera_sample.scale
-    dx = (camera_sample.center_x - img_center_x) * scale + pencil_offset_x
-    dy = (camera_sample.center_y - img_center_y) * scale + pencil_offset_y
-    dz = pencil_sample.millimeters
-    print(f"Pencil Position (mm): x={dx:.2f}, y={dy:.2f}, z={dz:.2f}")
+    correction.dx  = (camera_sample.center_x - img_center_x) * scale + pencil_offset_x
+    correction.dy = (camera_sample.center_y - img_center_y) * scale + pencil_offset_y
+    correction.dz = pencil_sample.millimeters
+    print(f"Pencil Position (mm): x={correction.dx:.2f}, y={correction.dy:.2f}, z={correction.dz:.2f}")
 
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
-    client.subscribe(CAMERA_TOPIC)
-    client.subscribe(PENCIL_TOPIC)
+    client.subscribe(publisher.camera_topic)
+    client.subscribe(publisher.pencil_topic)
 
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
-        if msg.topic == PENCIL_TOPIC:
+        if msg.topic == publisher.pencil_topic:
             receivePencil(payload)
-        elif msg.topic == CAMERA_TOPIC:
+        elif msg.topic == publisher.camera_topic:
             receiveCameraTemp(payload)
 
     except Exception as e:
@@ -130,20 +141,16 @@ def receiveCamera(payload):
 
     print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
 
-if __name__ == "__main__":
-    client = mqtt.Client()
-    client.on_connect = on_connect
-    client.on_message = on_message
+def connect_sensors():
+    publisher.client = mqtt.Client()
+    publisher.client.on_connect = on_connect
+    publisher.client.on_message = on_message
 
-    print(f"Connecting to {MQTT_BROKER}...")
-    client.connect(MQTT_BROKER, 1883, 60)
-    client.loop_start()
+    print(f"Connecting to {publisher.mqtt_broker}...")
+    publisher.client.connect(publisher.mqtt_broker, publisher.port, 60)
 
-    while True:
-        calculate_pencil_position()
-        # cv2.imshow("AprilTag Real-Time Map", canvas)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+def start_sensors():
+    publisher.client.loop_start()
 
-    cv2.destroyAllWindows()
-    client.loop_stop()
+def stop_sensors():
+    publisher.client.loop_stop()

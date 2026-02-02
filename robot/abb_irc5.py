@@ -1,7 +1,5 @@
 import scripts.egm_pb2 as egm_pb2
 import socket
-import signal
-import sys
 import numpy as np
 from dataclasses import dataclass
 
@@ -11,6 +9,10 @@ class robotState:
     initial_pos : np.ndarray
     pos : np.ndarray
     quaternion : np.ndarray
+    joints : np.ndarray
+    motors_on : bool
+
+@dataclass
 class EGMState:
     udp_ip: str = "0.0.0.0"
     udp_port: int = 6510
@@ -18,21 +20,24 @@ class EGMState:
     connected: bool = False
     egm_addr = None
     sock = None
+    rapid_state: bool = False
 
 # --- STATE ---
 robot_state = robotState(
     initial_pos = None,
     pos = None,
-    quaternion = None
+    quaternion = None,
+    joints = None,
+    motors_on = False
 )
 egm_state = EGMState()
 
-def connect_socket():
+def connect_robot():
     egm_state.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     egm_state.sock.settimeout(1.0) 
     egm_state.sock.bind((egm_state.udp_ip, egm_state.udp_port))
 
-def disconnect_socket():
+def disconnect_robot():
     egm_state.sock.close()
 
 def receive_data():
@@ -46,7 +51,16 @@ def receive_data():
         robot_message = egm_pb2.EgmRobot()
         robot_message.ParseFromString(data)
 
-        if robot_message.HasField('cartesian'):
+        if robot_message.HasField('feedBack'):
+            joints = robot_message.feedBack.joints.joints
+            robot_state.joints = np.array(list(joints))
+        if robot_message.HasField('rapidExecState'):
+            rapid_running = robot_message.rapidExecState.state == robot_message.rapidExecState.RAPID_RUNNING
+            egm_state.rapid_state = rapid_running
+        if robot_message.HasField('motorState'):
+            motors_on = robot_message.motorState.state == robot_message.motorState.MOTORS_ON
+            robot_state.motors_on = motors_on
+        if robot_message.feedBack.HasField('cartesian'):
             pos = robot_message.feedBack.cartesian.pos
             curr_pos = np.array([pos.x, pos.y, pos.z])
             orient = robot_message.feedBack.cartesian.orient
