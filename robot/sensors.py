@@ -9,15 +9,15 @@ from dataclasses import dataclass
 # --- DATACLASS ---
 @dataclass
 class PencilReading:
-    raw: int
-    millimeters: float
-    flag: int
+    raw: int = 0
+    millimeters: float = 0.0
+    flag: int = 0
 
 @dataclass # TODO: Add timestamp later
 class CameraDetection:
-    center_x: int
-    center_y: int
-    scale: float
+    center_x: int = 0
+    center_y: int = 0
+    scale: float = 0.0
 
 @dataclass
 class MQTTState:
@@ -39,8 +39,8 @@ MQTT_BROKER = "127.0.0.1"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
-camera_logger = CSVLogger(name="camera", log_dir="../logs")
-pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
+camera_logger = CSVLogger(name="camera", log_dir="test_logs")
+pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
 pencil_offset_x = -50  # in mm
@@ -49,8 +49,8 @@ pencil_offset_y = 0    # in mm
 # --- STATE ---
 correction = CorrectionState
 publisher = MQTTState(mqtt_broker=MQTT_BROKER)
-pencil_sample = PencilReading(0, 0.0, 0)
-camera_sample = CameraDetection(0, 0.0, 0)
+pencil_sample = PencilReading()
+camera_sample = CameraDetection()
 
 def calculate_pencil_position():
     if camera_sample.center_x == 0 and camera_sample.center_y == 0:

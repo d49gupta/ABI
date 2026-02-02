@@ -6,11 +6,11 @@ from dataclasses import dataclass
 # --- DATACLASS ---
 @dataclass
 class robotState:
-    initial_pos : np.ndarray
-    pos : np.ndarray
-    quaternion : np.ndarray
-    joints : np.ndarray
-    motors_on : bool
+    initial_pos : np.ndarray = None
+    pos : np.ndarray = None
+    quaternion : np.ndarray = None
+    joints : np.ndarray = None
+    motors_on : bool = False
 
 @dataclass
 class EGMState:
@@ -23,13 +23,7 @@ class EGMState:
     rapid_state: bool = False
 
 # --- STATE ---
-robot_state = robotState(
-    initial_pos = None,
-    pos = None,
-    quaternion = None,
-    joints = None,
-    motors_on = False
-)
+robot_state = robotState()
 egm_state = EGMState()
 
 def connect_robot():

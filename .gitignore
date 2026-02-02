@@ -1,5 +1,3 @@
 build
 *.pyc
-logs
-!logs/camera_logger_logs.csv
-!logs/pencil_logger_logs.csv
+test_logs
