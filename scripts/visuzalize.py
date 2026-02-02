@@ -4,16 +4,16 @@ import cv2
 import numpy as np
 from logger import CSVLogger
 
-# --- CONFIGURATION ---
 MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+# MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
-camera_logger = CSVLogger(name="camera_logger", log_dir="../logs")
-pencil_logger = CSVLogger(name="pencil_logger", log_dir="../logs")
+camera_logger = CSVLogger(name="camera", log_dir="../logs")
+pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
@@ -51,7 +51,6 @@ def receiveCamera(payload):
     sum_cy = 0
 
     for tag in tags:
-        # Draw the actual Tag locations for reference
         x = int(tag["x"])
         y = int(tag["y"])
         tag_id = tag["id"]
@@ -60,18 +59,15 @@ def receiveCamera(payload):
         cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
         
-        # Accumulate the estimated centers
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
 
-    # Calculate and draw the Average Circle Center
     if num_tags > 0:
         avg_cx = int(sum_cx / num_tags)
         avg_cy = int(sum_cy / num_tags)
 
-        # Draw a larger, bright target circle at the average position
-        cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)  # Red outline
-        cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)  # Red center dot
+        cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
+        cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
         cv2.putText(canvas, "TARGET CENTER", (avg_cx + 15, avg_cy + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         camera_logger.info("%.3f, %.3f", avg_cx, avg_cy)

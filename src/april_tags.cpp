@@ -7,7 +7,8 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     std::cout<<"Number of tags detected: " << this->num_tags << std::endl;
     this->detected_tags.clear();
 
-    for (size_t i = 0; i < this->num_tags; i++) {
+    for (size_t i = 0; i < this->num_tags; i++) 
+    {
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
         AprilTag td;
@@ -22,7 +23,7 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         
         double dx = det->p[1][0] - det->p[0][0];
         double dy = det->p[1][1] - det->p[0][1];
-        td.scale = this->tag_size / std::sqrt(dx*dx + dy*dy);
+        td.scale = this->tag_size / std::sqrt(dx*dx + dy*dy); // change from tag_size to dict with id and tag size
         
         this->detected_tags.push_back(td);
     }
