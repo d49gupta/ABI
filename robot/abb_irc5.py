@@ -2,6 +2,7 @@ import scripts.egm_pb2 as egm_pb2
 import socket
 import numpy as np
 from dataclasses import dataclass
+from scripts.logger import CSVLogger
 
 # --- DATACLASS ---
 @dataclass
@@ -21,6 +22,9 @@ class EGMState:
     egm_addr = None
     sock = None
     rapid_state: bool = False
+
+# --- GLOBALS ---
+robot_logger = CSVLogger(name="robot", log_dir="test_logs")
 
 # --- STATE ---
 robot_state = robotState()
@@ -56,12 +60,11 @@ def receive_data():
             robot_state.motors_on = motors_on
         if robot_message.feedBack.HasField('cartesian'):
             pos = robot_message.feedBack.cartesian.pos
-            curr_pos = np.array([pos.x, pos.y, pos.z])
+            robot_state.pos = np.array([pos.x, pos.y, pos.z])
             orient = robot_message.feedBack.cartesian.orient
             robot_state.quaternion = np.array([orient.u0, orient.u1, orient.u2, orient.u3])
-            robot_state.initial_pos = curr_pos if robot_state.initial_pos is None else robot_state.initial_pos
-
-        robot_state.pos = curr_pos - robot_state.initial_pos if robot_state.initial_pos is not None else curr_pos
+            robot_state.initial_pos = robot_state.pos if robot_state.initial_pos is None else robot_state.initial_pos
+            robot_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", pos.x, pos.y, pos.z, orient.u0, orient.u1, orient.u2, orient.u3)
             
     except socket.timeout:
         return None

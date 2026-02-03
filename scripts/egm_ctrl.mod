@@ -8,7 +8,7 @@ MODULE EGM_Cartesian_Module
 
     PROC main()
         EGMGetId egmID1;
-        EGMSetupUC ROB_1, egmID1, "conf1", "UCdevice:" \Pose \CommTimeout:=10;
+        EGMSetupUC ROB_1, egmID1, "conf1", "UCdevice:" \Pose \CommTimeout:=1;
         EGMStreamStart egmID1;
         
         EGMActPose egmID1 \Tool:=tool0 \WObj:=wobj0, base_frame, EGM_FRAME_WOBJ, base_frame, EGM_FRAME_WOBJ;
