@@ -17,7 +17,7 @@ def run_robot_loop():
             print("Connected to Robot!")
 
             while True:
-                command = "10,0,0"
+                command = "X:2"
                 s.sendall(command.encode('utf-8'))
                 
                 data = s.recv(1024).decode('utf-8')
