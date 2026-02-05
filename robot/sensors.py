@@ -38,7 +38,6 @@ class CorrectionState:
 MQTT_BROKER = "127.0.0.1"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
-canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 camera_logger = CSVLogger(name="camera", log_dir="test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 img_center_x = WINDOW_WIDTH // 2
@@ -102,10 +101,7 @@ def receiveCameraTemp(payload):
 
 
 def receiveCamera(payload):
-    global canvas
     data = json.loads(payload)
-    canvas.fill(0) 
-
     tags = data.get("tags", [])
     num_tags = len(tags)
 
@@ -117,22 +113,12 @@ def receiveCamera(payload):
         y = int(tag["y"])
         tag_id = tag["id"]
         scale = float(tag["scale"])
-
-        cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
-        cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
-        
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
 
     if num_tags > 0:
         avg_cx = int(sum_cx / num_tags)
         avg_cy = int(sum_cy / num_tags)
-
-        cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
-        cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
-        cv2.putText(canvas, "TARGET CENTER", (avg_cx + 15, avg_cy + 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         
         camera_logger.info("%.3f, %.3f, %.3f", avg_cx, avg_cy, scale)
         camera_sample.scale = scale
