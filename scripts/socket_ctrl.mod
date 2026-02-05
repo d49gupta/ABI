@@ -3,16 +3,23 @@ MODULE socket_comms
     VAR socketdev server_socket;
     VAR string received_msg;
     VAR string send_msg;
-    VAR robtarget target_pos;
-    VAR robtarget current_pos;
+    VAR robtarget target_pose;
+    VAR robtarget current_pose;
     VAR num x_dest;
     VAR num y_dest;
     VAR num z_dest;
-    VAR bool ok;
+    VAR bool good_command;
+    VAR bool good_data;
     VAR string client_ip := "127.0.0.1";
-
+    
+    VAR intnum comma_index;
+    VAR num command_id;
+    VAR string id_str;
+    VAR string data_str;
+    VAR pos move_data;
+    
     PROC openSocket()
-        target_pos := CRobT(\Tool:=tool0 \WObj:=wobj0);        
+        target_pose := CRobT(\Tool:=tool0 \WObj:=wobj0);        
         SocketCreate server_socket;
         SocketBind server_socket, client_ip, 5000;
         SocketListen server_socket;
@@ -20,39 +27,41 @@ MODULE socket_comms
     ENDPROC
         
     PROC Send()
-        current_pos := CRobT(\Tool:=tool0 \WObj:=wobj0);
+        current_pose := CRobT(\Tool:=tool0 \WObj:=wobj0);
         
-        send_msg := ValToStr(current_pos.trans.x) + "," + 
-                    ValToStr(current_pos.trans.y) + "," + 
-                    ValToStr(current_pos.trans.z);
+        send_msg := ValToStr(current_pose.trans.x) + "," + 
+                    ValToStr(current_pose.trans.y) + "," + 
+                    ValToStr(current_pose.trans.z) + "," +
+                    ValToStr(current_pose.rot.q1) + "," + 
+                    ValToStr(current_pose.rot.q2) + "," + 
+                    ValToStr(current_pose.rot.q3) + "," +
+                    ValToStr(current_pose.rot.q4);
         
         SocketSend client_socket \Str:=send_msg;
     ENDPROC
     
     PROC Receive()
         SocketReceive client_socket \Str:=received_msg;
+        comma_index := StrFind(received_msg, 1, ",");
+        id_str := StrPart(received_msg, 1, comma_index - 1);
+        good_command := StrToVal(id_str, command_id);
         
-        IF StrPart(received_msg, 1, 2) = "X:" THEN
-            ok := StrToVal(StrPart(received_msg, 3, StrLen(received_msg)-2), x_dest);
+        IF good_command THEN
+            TEST command_id
+            CASE 1:
+                data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
+                good_data := StrToVal(data_str, move_data);
+                MOVE_REL;
+            ENDTEST
         ENDIF
-        IF StrPart(received_msg, 1, 2) = "Y:" THEN
-            ok := StrToVal(StrPart(received_msg, 3, StrLen(received_msg)-2), y_dest);
-        ENDIF
-        IF StrPart(received_msg, 1, 2) = "Z:" THEN
-            ok := StrToVal(StrPart(received_msg, 3, StrLen(received_msg)-2), z_dest);
-        ENDIF
-        
-        target_pos.trans.x := x_dest;
-        target_pos.trans.y := y_dest;
-        target_pos.trans.z := z_dest;
     ENDPROC
         
     PROC MOVE_REL()
-        MoveL RelTool(CRobT(), x_dest, y_dest, z_dest), v10, fine, tool0;
+        MoveL RelTool(CRobT(), move_data.x, move_data.y, move_data.z), v10, fine, tool0;
     ENDPROC
     
     PROC MOVE_WORLD()
-        MOVEJ target_pos, v10, fine, tool0;
+        MOVEJ target_pose, v10, fine, tool0;
     ENDPROC
 
     PROC closeSocket()

@@ -18,7 +18,7 @@ if __name__ == "__main__":
         while True:
             irc5.read_robot_state()
             print(f"Current Position: {irc5.robot_state.pos} Orientation: {irc5.robot_state.orientation}")
-            irc5.send_cartesian_command(10, 0, 0)
+            irc5.send_cartesian_command(1, 1, 1)
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:

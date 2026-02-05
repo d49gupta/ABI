@@ -44,7 +44,7 @@ def read_robot_state():
         print("Timeout: No data received from robot.")
 
 def send_cartesian_command(dx, dy, dz):
-    command = f"X:{dx}"
+    command = f"1, {dx}, {dy}, {dz}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def disconnect_robot():
