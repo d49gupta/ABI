@@ -1,4 +1,3 @@
-import scripts.egm_pb2 as egm_pb2
 import socket
 import numpy as np
 from dataclasses import dataclass
@@ -6,84 +5,51 @@ from scripts.logger import CSVLogger
 
 # --- DATACLASS ---
 @dataclass
+class RobotConfig:
+    ip_address: str = '127.0.0.1'
+    port: int = 5000
+    socket = None
+    timeout: float = 5.0
+
 class robotState:
     initial_pos : np.ndarray = None
     pos : np.ndarray = None
-    quaternion : np.ndarray = None
-    joints : np.ndarray = None
-    motors_on : bool = False
-
-@dataclass
-class EGMState:
-    udp_ip: str = "0.0.0.0"
-    udp_port: int = 6510
-    sequence_number: int = 0
-    connected: bool = False
-    egm_addr = None
-    sock = None
-    rapid_state: bool = False
+    orientation : np.ndarray = None
 
 # --- GLOBALS ---
 robot_logger = CSVLogger(name="robot", log_dir="test_logs")
 
 # --- STATE ---
 robot_state = robotState()
-egm_state = EGMState()
+robot_config = RobotConfig()
 
 def connect_robot():
-    egm_state.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    egm_state.sock.settimeout(1.0) 
-    egm_state.sock.bind((egm_state.udp_ip, egm_state.udp_port))
+    robot_config.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    robot_config.socket.connect((robot_config.ip_address, robot_config.port))
+    robot_config.socket.settimeout(robot_config.timeout)
+
+def read_robot_state():
+    try:
+        data = robot_config.socket.recv(1024).decode('utf-8')
+        robot_values = [float(val) for val in data.split(',')]
+        robot_state.pos = np.array(robot_values[0:3])
+        robot_state.orientation = np.array(robot_values[3:7])
+
+        if robot_state.initial_pos is None:
+            robot_state.initial_pos = robot_state.pos.copy()
+
+        robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", robot_state.pos[0], robot_state.pos[1], robot_state.pos[2], 
+                        robot_state.orientation[0], robot_state.orientation[1], robot_state.orientation[2], robot_state.orientation[3])
+    except socket.timeout:
+        print("Timeout: No data received from robot.")
+
+def send_cartesian_command(dx, dy, dz):
+    command = f"1, {dx}, {dy}, {dz}"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
+def stop_robot():
+    command = f"2"
+    robot_config.socket.sendall(command.encode('utf-8'))
 
 def disconnect_robot():
-    egm_state.sock.close()
-
-def receive_data():
-    try:
-        data, addr = egm_state.sock.recvfrom(65536)
-        if not egm_state.connected:
-            print(f"CONNECTED: Receiving data from {addr}")
-            egm_state.connected = True
-            egm_state.egm_addr = addr
-
-        robot_message = egm_pb2.EgmRobot()
-        robot_message.ParseFromString(data)
-
-        if robot_message.HasField('feedBack'):
-            joints = robot_message.feedBack.joints.joints
-            robot_state.joints = np.array(list(joints))
-        if robot_message.HasField('rapidExecState'):
-            rapid_running = robot_message.rapidExecState.state == robot_message.rapidExecState.RAPID_RUNNING
-            egm_state.rapid_state = rapid_running
-        if robot_message.HasField('motorState'):
-            motors_on = robot_message.motorState.state == robot_message.motorState.MOTORS_ON
-            robot_state.motors_on = motors_on
-        if robot_message.feedBack.HasField('cartesian'):
-            pos = robot_message.feedBack.cartesian.pos
-            robot_state.pos = np.array([pos.x, pos.y, pos.z])
-            orient = robot_message.feedBack.cartesian.orient
-            robot_state.quaternion = np.array([orient.u0, orient.u1, orient.u2, orient.u3])
-            robot_state.initial_pos = robot_state.pos if robot_state.initial_pos is None else robot_state.initial_pos
-            robot_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", pos.x, pos.y, pos.z, orient.u0, orient.u1, orient.u2, orient.u3)
-            
-    except socket.timeout:
-        return None
-    
-def send_cartesian_command(x, y, z, u0, u1, u2, u3):
-    command_message = egm_pb2.EgmSensor()
-    command_message.header.seqno = egm_state.sequence_number
-    command_message.header.mtype = egm_pb2.EgmHeader.MessageType.Value('MSGTYPE_CORRECTION')
-
-    command_message.planned.cartesian.pos.x = x
-    command_message.planned.cartesian.pos.y = y
-    command_message.planned.cartesian.pos.z = z
-
-    command_message.planned.cartesian.orient.u0 = u0
-    command_message.planned.cartesian.orient.u1 = u1
-    command_message.planned.cartesian.orient.u2 = u2
-    command_message.planned.cartesian.orient.u3 = u3
-
-    egm_state.sequence_number += 1
-    sensor_data = command_message.SerializeToString()
-
-    egm_state.sock.sendto(sensor_data, egm_state.egm_addr)
+    robot_config.socket.close()
