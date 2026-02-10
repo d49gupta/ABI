@@ -12,6 +12,7 @@ class PencilReading:
     raw: int = 0
     millimeters: float = 0.0
     flag: int = 0
+    active: bool = False
 
 @dataclass # TODO: Add timestamp later
 class CameraDetection:
@@ -32,6 +33,7 @@ class CorrectionState:
     dx: float = 0.0
     dy: float = 0.0
     dz: float = 0.0
+    active_dz: bool = False
 
 # --- GLOBALS ---
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
@@ -47,32 +49,35 @@ pencil_offset_y = 0    # in mm
 
 # --- STATE ---
 correction = CorrectionState
-publisher = MQTTState(mqtt_broker=MQTT_BROKER)
+subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
 pencil_sample = PencilReading()
 camera_sample = CameraDetection()
 
-def calculate_pencil_position():
+def calculate_xy_target():
     if camera_sample.center_x == 0 and camera_sample.center_y == 0:
         return None
 
     scale = camera_sample.scale
     correction.dx  = (camera_sample.center_x - img_center_x) * scale + pencil_offset_x
     correction.dy = (camera_sample.center_y - img_center_y) * scale + pencil_offset_y
-    correction.dz = pencil_sample.millimeters
-    print(f"Pencil Position (mm): x={correction.dx:.2f}, y={correction.dy:.2f}, z={correction.dz:.2f}")
+    # print(f"Pencil Position (mm): x={correction.dx:.2f}, y={correction.dy:.2f}")
 
+def calculate_z_target():
+    correction.dz = pencil_sample.millimeters
+    correction.active_dz = pencil_sample.active
+    print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
-    client.subscribe(publisher.camera_topic)
-    client.subscribe(publisher.pencil_topic)
+    client.subscribe(subscriber.camera_topic)
+    client.subscribe(subscriber.pencil_topic)
 
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
-        if msg.topic == publisher.pencil_topic:
+        if msg.topic == subscriber.pencil_topic:
             receivePencil(payload)
-        elif msg.topic == publisher.camera_topic:
+        elif msg.topic == subscriber.camera_topic:
             receiveCameraTemp(payload)
 
     except Exception as e:
@@ -83,6 +88,11 @@ def receivePencil(payload):
     raw = int(data["raw"])
     distance = float(data["millimeters"])
     flag = int(data["flag"])
+
+    if abs(distance) < 0.05:
+        pencil_sample.active = False
+    else:        
+        pencil_sample.active = True
 
     pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
     pencil_sample.raw = raw
@@ -98,7 +108,7 @@ def receiveCameraTemp(payload):
     camera_sample.center_y = center_y
     camera_sample.scale = 0.01  # Temporary fixed scale
     print(f"Received Camera center: ({center_x}, {center_y})")
-
+    calculate_xy_target()
 
 def receiveCamera(payload):
     data = json.loads(payload)
@@ -128,15 +138,15 @@ def receiveCamera(payload):
     print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
 
 def connect_sensors():
-    publisher.client = mqtt.Client()
-    publisher.client.on_connect = on_connect
-    publisher.client.on_message = on_message
+    subscriber.client = mqtt.Client()
+    subscriber.client.on_connect = on_connect
+    subscriber.client.on_message = on_message
 
-    print(f"Connecting to {publisher.mqtt_broker}...")
-    publisher.client.connect(publisher.mqtt_broker, publisher.port, 60)
+    print(f"Connecting to {subscriber.mqtt_broker}...")
+    subscriber.client.connect(subscriber.mqtt_broker, subscriber.port, 60)
 
 def start_sensors():
-    publisher.client.loop_start()
+    subscriber.client.loop_start()
 
 def stop_sensors():
-    publisher.client.loop_stop()
+    subscriber.client.loop_stop()
