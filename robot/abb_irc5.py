@@ -47,5 +47,9 @@ def send_cartesian_command(dx, dy, dz):
     command = f"1, {dx}, {dy}, {dz}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
+def stop_robot():
+    command = f"2"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
 def disconnect_robot():
     robot_config.socket.close()

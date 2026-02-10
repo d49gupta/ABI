@@ -10,8 +10,8 @@ class MotionState(Enum):
     FIND_DEPTH = 3
     ASCEND = 4
 
-X_TARGET = 736.782
-Y_TARGET = 62.21
+X_TARGET = 756.827
+Y_TARGET = 77.41
 Z_TARGET = -905.67
 Z_THRESH = 4.0
 
@@ -75,11 +75,22 @@ def move_xyz_target():
     else:
         print(f"Final Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
         test_logger.info("Final Target Reached: (%.4f, %.4f, %.4f)", irc5.robot_state.pos[0], irc5.robot_state.pos[1], irc5.robot_state.pos[2])
-        motion_state = MotionState.IDLE
+        motion_state = MotionState.ASCEND
         return
 
-    test_logger.info("%.4f, %.4f, %.4f", dx_norm, dy_norm, dz_norm)
+    test_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
     irc5.send_cartesian_command(dx_norm, dy_norm, dz_norm)
+
+def ascent():
+    global motion_state
+    dz = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
+    if abs(dz) < 10.0:
+        print("Ascent Complete")
+        test_logger.info("Ascent Complete")
+        motion_state = MotionState.IDLE
+
+    test_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
+    irc5.send_cartesian_command(0, 0, 1)
 
 if __name__ == "__main__":
     # sensor_client = sensors.connect_sensors()
@@ -96,10 +107,15 @@ if __name__ == "__main__":
             irc5.read_robot_state()
             print(f"Current Position: {irc5.robot_state.pos}, Orientation: {irc5.robot_state.orientation}")
             move_xyz_target()
+        while motion_state == MotionState.ASCEND:
+            irc5.read_robot_state()
+            print(f"Current Position: {irc5.robot_state.pos}, Orientation: {irc5.robot_state.orientation}")
+            ascent()
 
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:
         print("Disconnecting from robot...")
-        irc5.disconnect_robot()
+        irc5.stop_robot()
+        # irc5.disconnect_robot()
         # sensors.stop_sensors()

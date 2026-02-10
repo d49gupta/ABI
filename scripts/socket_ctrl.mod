@@ -17,9 +17,11 @@ MODULE socket_comms
     VAR string id_str;
     VAR string data_str;
     VAR pos move_data;
+    TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
+
     
     PROC openSocket()
-        target_pose := CRobT(\Tool:=tool0 \WObj:=wobj0);        
+        target_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0); ! Default is tool0      
         SocketCreate server_socket;
         SocketBind server_socket, client_ip, 5000;
         SocketListen server_socket;
@@ -27,7 +29,7 @@ MODULE socket_comms
     ENDPROC
         
     PROC Send()
-        current_pose := CRobT(\Tool:=tool0 \WObj:=wobj0);
+        current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
         
         send_msg := ValToStr(current_pose.trans.x) + "," + 
                     ValToStr(current_pose.trans.y) + "," + 
@@ -52,16 +54,19 @@ MODULE socket_comms
                 data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
                 good_data := StrToVal(data_str, move_data);
                 MOVE_REL;
+            CASE 2:
+                StopMove;
+                closeSocket;
             ENDTEST
         ENDIF
     ENDPROC
         
     PROC MOVE_REL()
-        MoveL RelTool(CRobT(), move_data.x, move_data.y, move_data.z), v10, fine, tool0;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v10, fine, toolBladeTest;
     ENDPROC
     
     PROC MOVE_WORLD()
-        MOVEJ target_pose, v10, fine, tool0;
+        MOVEJ target_pose, v40, fine, tool0;
     ENDPROC
 
     PROC closeSocket()
