@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     std::signal(SIGINT, signalHandler);
 
     Publisher publisher;
-    AprilTagDetector detector(2.5, 5);
+    AprilTagDetector detector(2.5, 1.0, 5); // pass in radius of tags
     GT2 pencil(30);
 
     int width = 640;
