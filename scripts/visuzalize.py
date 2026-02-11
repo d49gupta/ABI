@@ -15,6 +15,10 @@ canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 camera_logger = CSVLogger(name="camera", log_dir="../logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
 
+# Mechanically fixed offsets from camera to pencil (mm)
+endpoint_offset_x = 5
+endpoint_offset_y = 2
+
 def on_connect(client, userdata, flags, rc):
     """
     When connected to the board setup subscribers to the camera module and 
@@ -111,17 +115,7 @@ def receiveCamera(payload):
 
     sum_cx = 0
     sum_cy = 0
-
-    # Mechanically fixed offsets from camera to pencil 
-    endpoint_offset_x = 50
-    endpoint_offset_y = 20
-    fixed_x = int(WINDOW_WIDTH / 2) + endpoint_offset_x
-    fixed_y = int(WINDOW_HEIGHT / 2) + endpoint_offset_y
-
-    # Plotting the relation between the camera and the predicted center 
-    cv2.circle(canvas, (fixed_x, fixed_y), 5, (255, 0, 255), -1)
-    cv2.putText(canvas, "TIP", (fixed_x + 10, fixed_y -10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+    sum_scale = 0
 
     for tag in tags:
         x = int(tag["x"])
@@ -134,15 +128,25 @@ def receiveCamera(payload):
         
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
+        sum_scale += tag["scale"]
 
     if num_tags > 0:
         avg_cx = int(sum_cx / num_tags)
         avg_cy = int(sum_cy / num_tags)
+        avg_scale = sum_scale / num_tags
 
+        projected_x = int(WINDOW_WIDTH / 2) + endpoint_offset_x / avg_scale
+        projected_y = int(WINDOW_HEIGHT / 2) - endpoint_offset_y / avg_scale # make sure camera and body directions are consistent
+
+        # Plotting the relation between the camera and the predicted center 
+        cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
+        cv2.putText(canvas, "TIP", (projected_x + 10, projected_y -10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+        
         # Putting the target circle on the canvas and logging the predicted point on the image in px
         cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
-        cv2.putText(canvas, "TARGET CENTER", (avg_cx + 15, avg_cy + 5),
+        cv2.putText(canvas, f"TARGET CENTER: {avg_scale:.2f} cm/pixel", (avg_cx + 15, avg_cy + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         camera_logger.info("%.3f, %.3f", avg_cx, avg_cy)
 

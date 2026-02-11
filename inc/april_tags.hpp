@@ -40,6 +40,12 @@ public:
         tag_positions[2] = {tag_offset,  tag_offset};
         tag_positions[3] = {-tag_offset,  tag_offset};
 	    tag_positions[4] = {0, 0};
+
+        tag_sizes[0] = tag_size;
+        tag_sizes[1] = tag_size;
+        tag_sizes[2] = tag_size;
+        tag_sizes[3] = tag_size;
+        tag_sizes[4] = tag_size;
     }
 
     ~AprilTagDetector() 
@@ -63,6 +69,7 @@ private:
     int offset; // in cm
     float tag_offset;
     std::unordered_map<int, Point2D> tag_positions;
+    std::unordered_map<int, float> tag_sizes;
 };
 
 #endif
