@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from logger import CSVLogger
 
-MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+MQTT_BROKER = "2607:fea8:1d66:2700:7033:19e3:57e5:7d33"
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
@@ -16,11 +16,43 @@ camera_logger = CSVLogger(name="camera", log_dir="../logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
 
 def on_connect(client, userdata, flags, rc):
+    """
+    When connected to the board setup subscribers to the camera module and 
+    the digital pressure sensor.
+
+    Args:
+        client: The client instance for this runtime
+        userdata:
+        flags:
+        rc: The result code response of the connection
+
+    Returns:
+        N/A
+    
+    Raises:
+        N/A
+    """
     print(f"Connected to Pi with result code {rc}")
     client.subscribe(CAMERA_TOPIC)
     client.subscribe(PENCIL_TOPIC)
 
 def on_message(client, userdata, msg):
+    """
+    Callback triggered when a message is received from the MQTT broker. 
+    Routes the payload to specific processing functions based on the topic.
+
+    Args:
+        client: The client instance for this callback.
+        userdata: The private user data as set in Client() or user_data_set().
+        msg: An instance of MQTTMessage. This is a class with members topic, 
+             payload, qos, retain.
+
+    Returns:
+        N/A
+    
+    Raises:
+        Exception: Logged to console if message decoding or routing fails.
+    """
     try:
         payload = msg.payload.decode("utf-8")
         if msg.topic == PENCIL_TOPIC:
@@ -32,6 +64,20 @@ def on_message(client, userdata, msg):
             print(f"Error processing message on {msg.topic}: {e}")
 
 def receivePencil(payload):
+    """
+    Parses digital pressure sensor data, logs the raw and physical values to 
+    a CSV file, and prints status to the console.
+
+    Args:
+        payload: A JSON string containing "raw", "millimeters", and "flag".
+
+    Returns:
+        N/A
+    
+    Raises:
+        JSONDecodeError: If the payload is not a valid JSON string.
+        KeyError: If expected keys are missing from the payload.
+    """
     data = json.loads(payload)
     raw = int(data["raw"])
     distance = float(data["millimeters"])
@@ -39,7 +85,23 @@ def receivePencil(payload):
     pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
     print(f"Received Pencil reading: {raw} bits")
 
+# TODO: Overlay this with a live compressed video feed
 def receiveCamera(payload):
+    """
+    Processes AprilTag detection data to update the global canvas. Draws 
+    individual tag positions and calculates/visualizes the average center point.
+
+    Args:
+        payload: A JSON string containing a list of "tags", each with x, y, 
+                 id, center_x, and center_y.
+
+    Returns:
+        N/A
+    
+    Raises:
+        JSONDecodeError: If the payload is not a valid JSON string.
+        ZeroDivisionError: Handled internally if no tags are detected.
+    """
     global canvas
     data = json.loads(payload)
     canvas.fill(0) 
@@ -49,6 +111,17 @@ def receiveCamera(payload):
 
     sum_cx = 0
     sum_cy = 0
+
+    # Mechanically fixed offsets from camera to pencil 
+    endpoint_offset_x = 50
+    endpoint_offset_y = 20
+    fixed_x = int(WINDOW_WIDTH / 2) + endpoint_offset_x
+    fixed_y = int(WINDOW_HEIGHT / 2) + endpoint_offset_y
+
+    # Plotting the relation between the camera and the predicted center 
+    cv2.circle(canvas, (fixed_x, fixed_y), 5, (255, 0, 255), -1)
+    cv2.putText(canvas, "TIP", (fixed_x + 10, fixed_y -10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
 
     for tag in tags:
         x = int(tag["x"])
@@ -66,6 +139,7 @@ def receiveCamera(payload):
         avg_cx = int(sum_cx / num_tags)
         avg_cy = int(sum_cy / num_tags)
 
+        # Putting the target circle on the canvas and logging the predicted point on the image in px
         cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
         cv2.putText(canvas, "TARGET CENTER", (avg_cx + 15, avg_cy + 5),
