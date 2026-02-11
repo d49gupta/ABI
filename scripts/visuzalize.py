@@ -15,7 +15,7 @@ canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 camera_logger = CSVLogger(name="camera", log_dir="../logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
 
-# Mechanically fixed offsets from camera to pencil (mm)
+# Mechanically fixed offsets from camera to pencil (cm)
 endpoint_offset_x = 5
 endpoint_offset_y = 2
 
