@@ -5,6 +5,7 @@ import numpy as np
 from logger import CSVLogger
 
 MQTT_BROKER = "2607:fea8:1d66:2700:7033:19e3:57e5:7d33"
+MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
@@ -12,8 +13,8 @@ WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
-camera_logger = CSVLogger(name="camera", log_dir="../logs")
-pencil_logger = CSVLogger(name="pencil", log_dir="../logs")
+camera_logger = CSVLogger(name="camera", log_dir="../test_logs")
+pencil_logger = CSVLogger(name="pencil", log_dir="../test_logs")
 
 # Mechanically fixed offsets from camera to pencil (cm)
 endpoint_offset_x = 5
@@ -135,12 +136,12 @@ def receiveCamera(payload):
         avg_cy = int(sum_cy / num_tags)
         avg_scale = sum_scale / num_tags
 
-        projected_x = int(WINDOW_WIDTH / 2) + endpoint_offset_x / avg_scale
-        projected_y = int(WINDOW_HEIGHT / 2) - endpoint_offset_y / avg_scale # make sure camera and body directions are consistent
+        projected_x = int(int(WINDOW_WIDTH / 2) + endpoint_offset_x / avg_scale)
+        projected_y = int(int(WINDOW_HEIGHT / 2) + endpoint_offset_y / avg_scale) # make sure camera and body directions are consistent
 
         # Plotting the relation between the camera and the predicted center 
         cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
-        cv2.putText(canvas, "TIP", (projected_x + 10, projected_y -10),
+        cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
         
         # Putting the target circle on the canvas and logging the predicted point on the image in px
