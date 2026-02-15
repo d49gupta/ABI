@@ -69,7 +69,7 @@ def receive_data():
     except socket.timeout:
         return None
     
-def send_cartesian_command(x, y, z, u0, u1, u2, u3):
+def move_rel_frame(x, y, z, u0, u1, u2, u3):
     command_message = egm_pb2.EgmSensor()
     command_message.header.seqno = egm_state.sequence_number
     command_message.header.mtype = egm_pb2.EgmHeader.MessageType.Value('MSGTYPE_CORRECTION')

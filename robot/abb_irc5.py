@@ -9,7 +9,7 @@ class RobotConfig:
     ip_address: str = '127.0.0.1'
     port: int = 5000
     socket = None
-    timeout: float = 5.0
+    timeout: float = 30.0
 
 class robotState:
     initial_pos : np.ndarray = None
@@ -43,12 +43,21 @@ def read_robot_state():
     except socket.timeout:
         print("Timeout: No data received from robot.")
 
-def send_cartesian_command(dx, dy, dz):
+def get_displacement():
+    if robot_state.initial_pos is None or robot_state.pos is None:
+        return np.zeros(3)
+    return robot_state.pos - robot_state.initial_pos
+
+def move_rel_frame(dx, dy, dz):
     command = f"1, {dx}, {dy}, {dz}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def stop_robot():
     command = f"2"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
+def move_robot_frame(x, y, z):
+    command = f"3, {x}, {y}, {z}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def disconnect_robot():

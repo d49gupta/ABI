@@ -68,7 +68,11 @@ MODULE socket_comms
     PROC MOVE_WORLD()
         MOVEJ target_pose, v40, fine, tool0;
     ENDPROC
-
+    
+    PROC MOVE_BODY()
+        MOVEL target_pose, v10, fine, toolBladeTest;
+    ENDPROC
+    
     PROC closeSocket()
         SocketClose client_socket;
         SocketClose server_socket;
@@ -80,7 +84,6 @@ MODULE socket_comms
         WHILE TRUE DO
             Send;
             Receive;
-            MOVE_REL;
         ENDWHILE
         
         closeSocket;

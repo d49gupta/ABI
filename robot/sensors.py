@@ -120,6 +120,7 @@ def receiveCamera(payload):
     sum_cx = 0
     sum_cy = 0
     sum_scale = 0
+    sum_est_z = 0
 
     for tag in tags:
         x = int(tag["x"])
@@ -129,6 +130,7 @@ def receiveCamera(payload):
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
         sum_scale += scale
+        sum_est_z += tag["est_z"]
 
         if show:
             cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
@@ -139,6 +141,7 @@ def receiveCamera(payload):
         avg_cx = int(sum_cx / num_tags)
         avg_cy = int(sum_cy / num_tags)
         avg_scale = sum_scale / num_tags
+        avg_est_z = sum_est_z / num_tags
         
         camera_sample.scale = avg_scale
         camera_sample.center_x = avg_cx
@@ -148,12 +151,13 @@ def receiveCamera(payload):
             return None
 
         scale = camera_sample.scale # mm / px
+        correction.est_z = avg_est_z
         correction.dx  = (camera_sample.center_x - img_center_x) * scale - pencil_offset_x
         correction.dy = (camera_sample.center_y - img_center_y) * scale - pencil_offset_y
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
-        camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, projected_x, projected_y)
+        camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
+                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.est_z, projected_x, projected_y)
 
         if show:
             cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
@@ -165,6 +169,8 @@ def receiveCamera(payload):
             cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
             inv_scale = 1 / avg_scale
             cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (avg_cx + 15, avg_cy + 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_est_z:.2f} mm", (75, 75),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
     print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")

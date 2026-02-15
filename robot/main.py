@@ -27,7 +27,7 @@ def move_xy_sensors():
         dy_norm = dy / magnitude
     
     irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, 0)
-    irc5.send_cartesian_command(dx_norm, dy_norm, 0)
+    irc5.move_rel_frame(dx_norm, dy_norm, 0)
 
 def move_xyz_sensors():
     # dx and dy magnitude should be less than 1.0
@@ -35,11 +35,13 @@ def move_xyz_sensors():
     dy = sensors.correction.dy
     dz = 0.0
 
+    # change to using depth estimate
+    # make interrupt to go into pencil mode when flag is active
     if not sensors.correction.active_dz or abs(sensors.correction.dz) < Z_THRESH:
         dz = 1.0
     
     irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
-    irc5.send_cartesian_command(dx, dy, dz)
+    irc5.move_rel_frame(dx, dy, dz)
 
 def move_xy_target():
     global motion_state
@@ -51,7 +53,7 @@ def move_xy_target():
         dx_norm = dx / magnitude
         dy_norm = dy / magnitude
         irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, 0)
-        irc5.send_cartesian_command(dx_norm, dy_norm, 0)
+        irc5.move_rel_frame(dx_norm, dy_norm, 0)
     else:
         print(f"Center Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f})")
         irc5.robot_logger.info("Center Target Reached (%.4f, %.4f)", irc5.robot_state.pos[0], irc5.robot_state.pos[1])
@@ -78,7 +80,7 @@ def move_xyz_target():
         return
 
     irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
-    irc5.send_cartesian_command(dx_norm, dy_norm, dz_norm)
+    irc5.move_rel_frame(dx_norm, dy_norm, dz_norm)
 
 def ascent():
     global motion_state
@@ -89,7 +91,7 @@ def ascent():
         motion_state = MotionState.IDLE
 
     irc5.robot_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
-    irc5.send_cartesian_command(0, 0, 1)
+    irc5.move_rel_frame(0, 0, 1)
 
 if __name__ == "__main__":
     sensor_client = sensors.connect_sensors()
@@ -118,3 +120,4 @@ if __name__ == "__main__":
         irc5.stop_robot()
         irc5.disconnect_robot()
         sensors.stop_sensors()
+        # TODO: Send command to pi to stop vision processing
