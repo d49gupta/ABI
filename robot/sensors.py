@@ -34,6 +34,7 @@ class CorrectionState:
     dy: float = 0.0
     dz: float = 0.0
     active_dz: bool = False
+    est_z: float = 0.0
 
 # --- GLOBALS ---
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
@@ -46,8 +47,12 @@ camera_logger = CSVLogger(name="camera", log_dir="test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
+
+# Define offset in mm 
+# Dont even need offset, just set target of pencil constant offset from center of camera target
+# This way April Tags are always in view of camera no matter where pencil is
 pencil_offset_x = 0
-pencil_offset_y = 3
+pencil_offset_y = 0
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 show = True
 
@@ -79,7 +84,7 @@ def receivePencil(payload):
     distance = float(data["millimeters"])
     flag = int(data["flag"])
 
-    if abs(distance) < 0.05:
+    if abs(distance) < 0.25:
         pencil_sample.active = False
     else:        
         pencil_sample.active = True
@@ -142,7 +147,7 @@ def receiveCamera(payload):
         if camera_sample.center_x == 0 and camera_sample.center_y == 0:
             return None
 
-        scale = camera_sample.scale
+        scale = camera_sample.scale # mm / px
         correction.dx  = (camera_sample.center_x - img_center_x) * scale - pencil_offset_x
         correction.dy = (camera_sample.center_y - img_center_y) * scale - pencil_offset_y
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
@@ -159,7 +164,7 @@ def receiveCamera(payload):
             cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
             cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
             inv_scale = 1 / avg_scale
-            cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/cm", (avg_cx + 15, avg_cy + 5),
+            cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (avg_cx + 15, avg_cy + 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
     print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")

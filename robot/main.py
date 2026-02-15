@@ -1,7 +1,6 @@
 import robot.abb_irc5 as irc5
 import robot.sensors as sensors
 from enum import Enum
-from scripts.logger import CSVLogger
 
 class MotionState(Enum):
     IDLE = 0
@@ -60,7 +59,7 @@ def move_xy_target():
         return
 
 def move_xyz_target():
-    global motion_state
+    global motion_state, final_robot_pose
     # dx and dy magnitude should be less than 1.0
     dx = X_TARGET - irc5.robot_state.pos[0]
     dy = Y_TARGET - irc5.robot_state.pos[1]
@@ -74,6 +73,7 @@ def move_xyz_target():
     else:
         print(f"Final Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
         irc5.robot_logger.info("Final Target Reached: (%.4f, %.4f, %.4f)", irc5.robot_state.pos[0], irc5.robot_state.pos[1], irc5.robot_state.pos[2])
+        final_robot_pose = irc5.robot_state.pos.copy()
         motion_state = MotionState.ASCEND
         return
 
