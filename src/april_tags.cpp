@@ -91,8 +91,7 @@ std::string AprilTagDetector::JSONOutput()
         << "\"y\":"        << detected_tags[i].y  << ","
         << "\"center_x\":" << detected_tags[i].center_x << ","
         << "\"center_y\":" << detected_tags[i].center_y << ","
-        << "\"scale\":"  << detected_tags[i].scale <<
-        << "}";
+        << "\"scale\":"  << detected_tags[i].scale << "}";
         
         if (i < detected_tags.size() - 1) ss << ",";
     }

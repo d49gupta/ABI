@@ -32,6 +32,7 @@ void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* bu
     std::thread pThread(runPencilThread, &pencil, &publisher);
     while (keepRunning && std::cin.read((char*)buffer, size)) 
     {
+	std::cout<<"Reading Camera Frames"<<std::endl;
         image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
         detector.detectTags(&img);
         std::string jsonOutput = detector.JSONOutput();

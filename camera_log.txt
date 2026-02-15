@@ -1,0 +1,17 @@
+[0:07:06.498615500] [1357] [1;32m INFO [1;37mCamera [1;34mcamera_manager.cpp:340 [0mlibcamera v0.6.0+rpt20251202
+[0:07:06.512746646] [1363] [1;32m INFO [1;37mRPI [1;34mpisp.cpp:720 [0mlibpisp version 1.3.0
+[0:07:06.603969249] [1363] [1;32m INFO [1;37mIPAProxy [1;34mipa_proxy.cpp:180 [0mUsing tuning file /usr/share/libcamera/ipa/rpi/pisp/imx708.json
+[0:07:06.615431311] [1363] [1;32m INFO [1;37mCamera [1;34mcamera_manager.cpp:223 [0mAdding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx708@1a' for pipeline handler rpi/pisp
+[0:07:06.615462737] [1363] [1;32m INFO [1;37mRPI [1;34mpisp.cpp:1181 [0mRegistered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx708@1a to CFE device /dev/media2 and ISP device /dev/media0 using PiSP variant BCM2712_C0
+Made X/EGL preview window
+Made DRM preview window
+Mode selection for 640:480:12:P(20)
+    SRGGB10_CSI2P,1536x864/120.135 - Score: 1486.67
+    SRGGB10_CSI2P,2304x1296/56.0255 - Score: 1786.67
+    SRGGB10_CSI2P,4608x2592/14.3536 - Score: 13979.5
+Stream configuration adjusted
+[0:07:06.917438042] [1357] [1;32m INFO [1;37mCamera [1;34mcamera.cpp:1215 [0mconfiguring streams: (0) 640x480-YUV420/sYCC (1) 1536x864-BGGR_PISP_COMP1/RAW
+[0:07:06.917511950] [1363] [1;32m INFO [1;37mRPI [1;34mpisp.cpp:1485 [0mSensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx708@1a - Selected sensor format: 1536x864-SBGGR10_1X10/RAW - Selected CFE format: 1536x864-PC1B/RAW
+Received signal 13
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  failed to write output bytes
