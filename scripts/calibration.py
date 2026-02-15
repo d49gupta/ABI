@@ -58,49 +58,38 @@ class Calibration:
 if __name__ == "__main__":
     calib = Calibration()
     picam2 = Picamera2()
-    
-    # Configure for a fast preview stream
     config = picam2.create_video_configuration(main={"format": "RGB888", "size": (640, 480)})
     picam2.configure(config)
     picam2.start()
 
-    # Make sure these match your physical checkerboard (internal corners only!)
-    INNER_ROWS = 10 
-    INNER_COLS = 17
-
-    print("--- Calibration Mode ---")
-    print("Press 'c' to capture current frame")
-    print("Press 'q' to finish and calculate")
+    print("--- Headless Calibration Mode ---")
+    print("Commands:")
+    print("  [Enter] : Capture current frame")
+    print("  q [Enter]: Finish and calculate")
 
     try:
         while True:
-            # capture_array() in a loop gives us a live feed
-            frame = picam2.capture_array()
+            user_input = input("Waiting (Enter=Capture, q=Finish): ").lower()
             
-            # Picamera2 RGB888 is actually RGB, OpenCV likes BGR
-            show = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            
-            key = cv2.waitKey(1) & 0xFF
-            
-            if key == ord("c"):
-                found, corners = calib.add_frame(show, INNER_ROWS, INNER_COLS)
-                if found:
-                    print(f"Accepted frame #{len(calib.obj_points)}")
-                    cv2.drawChessboardCorners(show, (INNER_COLS, INNER_ROWS), corners, found)
-                    cv2.imshow("Calibration", show)
-                    cv2.waitKey(500) 
-
-            cv2.imshow("Calibration", show)
-            
-            if key == ord("q"):
+            if user_input == 'q':
                 break
-                
+            
+            frame = picam2.capture_array()
+            process_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            found, corners = calib.add_frame(process_frame, 10, 17)
+            if found:
+                print(f"SUCCESS: Found corners! Total frames: {len(calib.obj_points)}")
+                # cv2.imwrite(f"last_captured_{len(calib.obj_points)}.jpg", process_frame)
+            else:
+                print("FAILED: No corners detected. Reposition and try again.")
+                # cv2.imwrite("failed_capture.jpg", process_frame)
+
     finally:
-        if len(calib.obj_points) > 0:
-            print("\nCalculating calibration... please wait.")
-            h, w = frame.shape[:2]
-            ret, K, dist = calib.calibrate((w, h))
+        if len(calib.obj_points) >= 3:
+            print("\nCalculating calibration...")
+            ret, K, dist = calib.calibrate((640, 480))
             calib.save()
+        else:
+            print("Not enough frames captured.")
         
         picam2.stop()
-        cv2.destroyAllWindows()
