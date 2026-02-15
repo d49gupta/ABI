@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 from logger import CSVLogger
 
-MQTT_BROKER = "2607:fea8:1d66:2700:7033:19e3:57e5:7d33"
-MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+MQTT_BROKER = "192.168.1.144"
+# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
@@ -17,8 +17,8 @@ camera_logger = CSVLogger(name="camera", log_dir="../test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="../test_logs")
 
 # Mechanically fixed offsets from camera to pencil (cm)
-endpoint_offset_x = 5
-endpoint_offset_y = 2
+endpoint_offset_x = -14
+endpoint_offset_y = 0
 
 def on_connect(client, userdata, flags, rc):
     """
@@ -147,7 +147,8 @@ def receiveCamera(payload):
         # Putting the target circle on the canvas and logging the predicted point on the image in px
         cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
-        cv2.putText(canvas, f"TARGET CENTER: {avg_scale:.2f} cm/pixel", (avg_cx + 15, avg_cy + 5),
+        inv_scale = 1 / avg_scale
+        cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/cm", (avg_cx + 15, avg_cy + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         camera_logger.info("%.3f, %.3f", avg_cx, avg_cy)
 
