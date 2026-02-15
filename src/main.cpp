@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 
     Publisher publisher;
     //AprilTagDetector detector(12.5, 6.5, 5.0); // pass in radius of tags
-    AprilTagDetector detector(25, 10, 5.0);	    
+    AprilTagDetector detector(25, 10, 2.4);	    
     GT2 pencil(30);
 
     int width = 640;

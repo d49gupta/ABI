@@ -25,7 +25,7 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         double dy = det->p[1][1] - det->p[0][1];
         float curr_tag_size = this->tag_sizes[det->id];
         td.scale = curr_tag_size / std::sqrt(dx*dx + dy*dy); // mm / pixels
-        td.est_z = FOCAL_LENGTH * curr_tag_size / std::sqrt(dx*dx + dy*dy); // mm
+        td.est_z = FOCAL_LENGTH * curr_tag_size * 2 / std::sqrt(dx*dx + dy*dy); // mm
         
         this->detected_tags.push_back(td);
     }
