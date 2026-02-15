@@ -9,6 +9,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <cmath>
+
+#define FOCAL_LENGTH 292.3 // TODO: Pull from calibration_arducam.yaml
 struct AprilTag
 {
     int id;
@@ -16,6 +18,7 @@ struct AprilTag
     double y;
     double center_x;
     double center_y;
+    double est_z;
     double scale;
 };
 

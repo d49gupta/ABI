@@ -25,6 +25,7 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         double dy = det->p[1][1] - det->p[0][1];
         float curr_tag_size = this->tag_sizes[det->id];
         td.scale = curr_tag_size / std::sqrt(dx*dx + dy*dy); // mm / pixels
+        td.est_z = FOCAL_LENGTH * curr_tag_size / std::sqrt(dx*dx + dy*dy); // mm
         
         this->detected_tags.push_back(td);
     }
@@ -91,7 +92,8 @@ std::string AprilTagDetector::JSONOutput()
         << "\"y\":"        << detected_tags[i].y  << ","
         << "\"center_x\":" << detected_tags[i].center_x << ","
         << "\"center_y\":" << detected_tags[i].center_y << ","
-        << "\"scale\":"  << detected_tags[i].scale << "}";
+        << "\"scale\":"  << detected_tags[i].scale << ","
+        << "\"est_z\":"  << detected_tags[i].est_z << "}";
         
         if (i < detected_tags.size() - 1) ss << ",";
     }
