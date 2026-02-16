@@ -77,7 +77,7 @@ MODULE socket_comms
     ENDPROC
     
     PROC MOVE_BODY()
-        MOVEL target_pose, v10, z1, toolBladeTest;
+        MOVEL target_pose, v50, z1, toolBladeTest;
     ENDPROC
     
     PROC closeSocket()
