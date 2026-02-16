@@ -57,6 +57,13 @@ MODULE socket_comms
             CASE 2:
                 StopMove;
                 closeSocket;
+            CASE 3:
+                data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
+                good_data := StrToVal(data_str, move_data);
+                target_pose.trans.x := move_data.x;
+                target_pose.trans.y := move_data.y;
+                target_pose.trans.z := move_data.z;
+                MOVE_BODY;
             ENDTEST
         ENDIF
     ENDPROC
@@ -70,7 +77,7 @@ MODULE socket_comms
     ENDPROC
     
     PROC MOVE_BODY()
-        MOVEL target_pose, v10, fine, toolBladeTest;
+        MOVEL target_pose, v10, z1, toolBladeTest;
     ENDPROC
     
     PROC closeSocket()

@@ -40,13 +40,13 @@ class CorrectionState:
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 # MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "192.168.1.144"
-
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 camera_logger = CSVLogger(name="camera", log_dir="test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
+MIN_PENCIL_Z = 0.25
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
@@ -84,7 +84,7 @@ def receivePencil(payload):
     distance = float(data["millimeters"])
     flag = int(data["flag"])
 
-    if abs(distance) < 0.25:
+    if abs(distance) < MIN_PENCIL_Z:
         pencil_sample.active = False
     else:        
         pencil_sample.active = True
@@ -96,7 +96,7 @@ def receivePencil(payload):
 
     correction.dz = pencil_sample.millimeters
     correction.active_dz = pencil_sample.active
-    print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
+    # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
 def receiveCameraTemp(payload):
     data = json.loads(payload)
@@ -173,7 +173,7 @@ def receiveCamera(payload):
             cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_est_z:.2f} mm", (75, 75),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-    print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
+    # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
 
 def connect_sensors():
     subscriber.client = mqtt.Client()
