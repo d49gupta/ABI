@@ -9,6 +9,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <cmath>
+
+#define FOCAL_LENGTH 292.3 // TODO: Pull from calibration_arducam.yaml
 struct AprilTag
 {
     int id;
@@ -16,6 +18,7 @@ struct AprilTag
     double y;
     double center_x;
     double center_y;
+    double est_z;
     double scale;
 };
 
@@ -28,10 +31,12 @@ struct Point2D
 class AprilTagDetector 
 {
 public:
-    AprilTagDetector(int tag_size, int offset) : tag_size(tag_size), offset(offset)
+    AprilTagDetector(int tag_size_corners, int tag_size_center, int offset) 
+    : tag_size_corners(tag_size_corners), tag_size_center(tag_size_center), offset(offset)
     {
-        tag_offset = offset / (1.0 * tag_size);
-        tf = tag36h11_create();
+       // tag_offset = offset / (1.0 * tag_size_corners);
+        tag_offset = offset;
+	tf = tag36h11_create();
         td = apriltag_detector_create();
         apriltag_detector_add_family(td, tf);
 
@@ -41,11 +46,11 @@ public:
         tag_positions[3] = {-tag_offset,  tag_offset};
 	    tag_positions[4] = {0, 0};
 
-        tag_sizes[0] = tag_size;
-        tag_sizes[1] = tag_size;
-        tag_sizes[2] = tag_size;
-        tag_sizes[3] = tag_size;
-        tag_sizes[4] = tag_size;
+        tag_sizes[0] = tag_size_corners;
+        tag_sizes[1] = tag_size_corners;
+        tag_sizes[2] = tag_size_corners;
+        tag_sizes[3] = tag_size_corners;
+        tag_sizes[4] = tag_size_center;
     }
 
     ~AprilTagDetector() 
@@ -65,8 +70,9 @@ public:
 private:
     apriltag_family_t *tf;
     apriltag_detector_t *td;
-    int tag_size; // in cm
-    int offset; // in cm
+    int tag_size_corners; // in cm
+    int tag_size_center; // in cm
+    int offset; // in terms of tag_size_corners
     float tag_offset;
     std::unordered_map<int, Point2D> tag_positions;
     std::unordered_map<int, float> tag_sizes;
