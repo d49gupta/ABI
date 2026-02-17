@@ -1,32 +1,22 @@
 import socket
 import numpy as np
-from dataclasses import dataclass
-from scripts.logger import CSVLogger
+from robot.globals import *
 
-# --- DATACLASS ---
-@dataclass
-class RobotConfig:
-    ip_address: str = '127.0.0.1'
-    port: int = 5000
-    socket = None
-    timeout: float = 30.0
-
-class robotState:
-    initial_pos : np.ndarray = None
-    pos : np.ndarray = None
-    orientation : np.ndarray = None
-
-# --- GLOBALS ---
-robot_logger = CSVLogger(name="robot", log_dir="test_logs")
-
-# --- STATE ---
+# --- STATES ---
 robot_state = robotState()
-robot_config = RobotConfig()
 
 def connect_robot():
-    robot_config.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    robot_config.socket.connect((robot_config.ip_address, robot_config.port))
-    robot_config.socket.settimeout(robot_config.timeout)
+    try:
+        robot_config.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        robot_config.socket.connect((robot_config.ip_address, robot_config.port))
+        robot_config.socket.settimeout(robot_config.timeout)
+        robot_config.connected = True
+    except (socket.timeout, ConnectionRefusedError, OSError) as e:
+        print(f"Connection failed: {e}")
+        robot_config.connected = False
+
+def connection_status():
+    return robot_config.connected
 
 def read_robot_state():
     try:

@@ -2,63 +2,16 @@ from xmlrpc import client
 import paho.mqtt.client as mqtt
 import json
 import cv2
-import numpy as np
-from scripts.logger import CSVLogger
-from dataclasses import dataclass
-
-# --- DATACLASS ---
-@dataclass
-class PencilReading:
-    raw: int = 0
-    millimeters: float = 0.0
-    flag: int = 0
-    active: bool = False
-
-@dataclass # TODO: Add timestamp later
-class CameraDetection:
-    center_x: int = 0
-    center_y: int = 0
-    scale: float = 0.0
-
-@dataclass
-class MQTTState:
-    mqtt_broker: str = "127.0.0.1"
-    camera_topic: str = "camera/detections"
-    pencil_topic: str = "pencil/reading"
-    port: int = 1883
-    client = None
-
-@dataclass
-class CorrectionState:
-    dx: float = 0.0
-    dy: float = 0.0
-    dz: float = 0.0
-    active_dz: bool = False
-    est_z: float = 0.0
-
-# --- GLOBALS ---
-# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
-# MQTT_BROKER = "127.0.0.1"
-MQTT_BROKER = "192.168.1.144"
-WINDOW_WIDTH = 640
-WINDOW_HEIGHT = 480
-camera_logger = CSVLogger(name="camera", log_dir="test_logs")
-pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
-img_center_x = WINDOW_WIDTH // 2
-img_center_y = WINDOW_HEIGHT // 2
-MIN_PENCIL_Z = 0.25
+from robot.globals import *
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
 # This way April Tags are always in view of camera no matter where pencil is
 pencil_offset_x = 0
 pencil_offset_y = 0
-canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
-show = True
 
-# --- STATE ---
+# --- STATES ---
 correction = CorrectionState()
-subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
 pencil_sample = PencilReading()
 camera_sample = CameraDetection()
 
@@ -70,6 +23,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
+        subscriber.msg_count += 1
         if msg.topic == subscriber.pencil_topic:
             receivePencil(payload)
         elif msg.topic == subscriber.camera_topic:
@@ -78,24 +32,27 @@ def on_message(client, userdata, msg):
     except Exception as e:
             print(f"Error processing message on {msg.topic}: {e}")
 
+def connection_status():
+    return subscriber.msg_count > 0
+
 def receivePencil(payload):
     data = json.loads(payload)
     raw = int(data["raw"])
     distance = float(data["millimeters"])
-    flag = int(data["flag"])
+
+    pencil_logger.info("%d, %.4f", raw, distance)
+    pencil_sample.raw = raw
+    pencil_sample.millimeters = distance
+    correction.dz = pencil_sample.millimeters
 
     if abs(distance) < MIN_PENCIL_Z:
         pencil_sample.active = False
+        correction.active_dz = pencil_sample.active
     else:        
         pencil_sample.active = True
+        correction.active_dz = pencil_sample.active
+        print("PENCIL SENSOR ACTIVE")
 
-    pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
-    pencil_sample.raw = raw
-    pencil_sample.millimeters = distance
-    pencil_sample.flag = flag
-
-    correction.dz = pencil_sample.millimeters
-    correction.active_dz = pencil_sample.active
     # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
 def receiveCameraTemp(payload):

@@ -1,19 +1,8 @@
 import robot.abb_irc5 as irc5
 import robot.sensors as sensors
-from enum import Enum
+from robot.globals import *
 
-class MotionState(Enum):
-    IDLE = 0
-    FIND_CENTER = 1
-    DESCEND = 2
-    FIND_DEPTH = 3
-    ASCEND = 4
-
-X_TARGET = 756.827
-Y_TARGET = 77.41
-Z_TARGET = -905.67
-Z_THRESH = 4.0
-
+# --- STATES ---
 final_robot_pose = None
 motion_state = MotionState.IDLE
 
@@ -35,8 +24,8 @@ def move_xyz_sensors():
     dy = sensors.correction.dy
     dz = 0.0
 
-    # change to using depth estimate
-    # make interrupt to go into pencil mode when flag is active
+    # TODO: change to using depth estimate
+    # TODO: make interrupt to go into pencil mode when flag is active
     if not sensors.correction.active_dz or abs(sensors.correction.dz) < Z_THRESH:
         dz = 1.0
     
