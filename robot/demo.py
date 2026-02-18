@@ -54,14 +54,15 @@ if __name__ == "__main__":
 
             print(f"Current Robot Pose: {irc5.robot_state.pos}, {irc5.robot_state.orientation}")
             Kp = 0.1
-            dx = Kp * (X_TARGET - irc5.robot_state.pos[0])
-            dy = Kp * (Y_TARGET - irc5.robot_state.pos[1])
-            dz = Kp * (Z_TARGET - irc5.robot_state.pos[2])
+            dx = irc5.robot_state.pos[0] + 1.0
+            dy = irc5.robot_state.pos[1] + 1.0
+            dz = irc5.robot_state.pos[2] - 1.0
             irc5.move_robot_frame(dx, dy, dz)
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET
+            time.sleep(0.1) # cant send commands too fast
 
             # counter += 1
             # correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, correction.dx, 
