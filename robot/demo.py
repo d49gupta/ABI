@@ -54,7 +54,7 @@ if __name__ == "__main__":
             dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
 
             current_time = time.perf_counter()
-            if current_time - last_time < 0.1: # limit to 20 Hz
+            if current_time - last_time < ROBOT_PUBLISH_RATE: # limit to 20 Hz
                 continue
 
             last_time = current_time

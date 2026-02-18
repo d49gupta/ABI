@@ -76,6 +76,7 @@ Z_TARGET = -905.67
 Z_THRESH = 4.0
 MIN_PENCIL_Z = 0.25
 PENCIL_Z_OFFSET = 40 # mm
+ROBOT_PUBLISH_RATE = 0.07 # seconds
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
