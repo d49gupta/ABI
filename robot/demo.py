@@ -5,58 +5,73 @@ from robot.globals import *
 import time
 
 if __name__ == "__main__":
-    sensor_client = sensors.connect_sensors()
-    sensors.start_sensors()
-    robot = irc5.connect_robot()
+    # sensors.connect_sensors()
+    # sensors.start_sensors()
+    print("Connecting to robot...")
+    irc5.connect_robot()
+    irc5.start_reading_robot()
     time.sleep(2)
 
-    if not sensors.connection_status() or not irc5.connection_status():
-        print(sensors.connection_status(), irc5.connection_status())
-        print("Failed to connect to sensors or robot.")
+    # if not sensors.connection_status() or not irc5.connection_status():
+    #     print(sensors.connection_status(), irc5.connection_status())
+    #     print("Failed to connect to sensors or robot.")
+    #     exit(1)
+
+    if not irc5.connection_status():
+        print(irc5.robot_config.connected, irc5.robot_config.msg_count)
+        print("Failed to connect to robot.")
         exit(1)
 
-    irc5.read_robot_state()
-    print(f"initial robot position: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
     counter = 0
     try:
         while True:
-            with canvas_lock:
-                cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+
+            # if not sensors.connection_status() or not irc5.connection_status():
+            #     print("Lost connection to sensors or robot.")
+            #     break
             
-            if not sensors.correction_buffer:
-                correction_logger.warning("No correction data available yet.")
+            # if not sensors.correction_buffer:
+            #     correction_logger.warning("No correction data available yet.")
+            #     continue
+
+            if not irc5.robot_pose_buffer:
+                irc5.robot_logger.warning("No robot pose data available yet.")
                 continue
 
-            if pencil_buffer and pencil_buffer[-1].active:
-                print("PENCIL ACTIVE")
-                break
+            # with canvas_lock:
+            #     cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
 
-            correction = sensors.correction_buffer[-1]
-            dx = X_TARGET + correction.dx
-            dy = Y_TARGET - correction.dy
-            dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
+            # if pencil_buffer and pencil_buffer[-1].active:
+            #     print("PENCIL ACTIVE")
+            #     break
+
+            # correction = sensors.correction_buffer[-1]
+            # dx = X_TARGET + correction.dx
+            # dy = Y_TARGET - correction.dy
+            # dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
+
+            print(f"Current Robot Pose: {irc5.robot_state.pos}, {irc5.robot_state.orientation}")
+            Kp = 0.1
+            dx = Kp * (X_TARGET - irc5.robot_state.pos[0])
+            dy = Kp * (Y_TARGET - irc5.robot_state.pos[1])
+            dz = Kp * (Z_TARGET - irc5.robot_state.pos[2])
             irc5.move_robot_frame(dx, dy, dz)
-            irc5.read_robot_state()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET
 
-            counter += 1
-            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, correction.dx, 
-                             correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
-
-            if abs(dx*dx + dy*dy) < 1.0:
-                sensors.camera_logger.info("Target Reached")
-                irc5.robot_logger.info("Target Reached")
-                break
+            # counter += 1
+            # correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, correction.dx, 
+            #                  correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:
         print("Disconnecting from robot...")
         irc5.stop_robot()
+        irc5.stop_reading_robot()
         irc5.disconnect_robot()
-        sensors.stop_sensors()
+        # sensors.stop_sensors()

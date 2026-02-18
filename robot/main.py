@@ -2,7 +2,7 @@ import robot.abb_irc5 as irc5
 import robot.sensors as sensors
 from robot.globals import *
 
-#TODO: Change sensors. to get from global deque
+#TODO: Change sensors and robot. to get from global deque
 
 # --- STATES ---
 final_robot_pose = None

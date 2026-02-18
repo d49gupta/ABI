@@ -4,17 +4,13 @@ import json
 import cv2
 import statistics
 from robot.globals import *
+from dataclasses import replace
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
 # This way April Tags are always in view of camera no matter where pencil is
 pencil_offset_x = 0
 pencil_offset_y = 0
-
-# --- STATES ---
-correction = CorrectionState()
-pencil_sample = PencilReading()
-camera_sample = CameraDetection()
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
@@ -46,7 +42,8 @@ def receivePencil(payload):
     pencil_sample.active = distance >= MIN_PENCIL_Z
 
     pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
-    pencil_buffer.append(pencil_sample)
+    curr_pencil_sample = replace(pencil_sample)
+    pencil_buffer.append(curr_pencil_sample)
 
     # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
@@ -119,8 +116,10 @@ def receiveCamera(payload):
         camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
                            avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
-        camera_buffer.append(camera_sample) # might not need to store any camera samples, just correction values
-        correction_buffer.append(correction)
+        curr_camera_sample = replace(camera_sample)
+        curr_correction = replace(correction)
+        camera_buffer.append(curr_camera_sample) # might not need to store any camera samples, just correction values
+        correction_buffer.append(curr_correction)
 
         if show:
             with canvas_lock:
@@ -128,10 +127,10 @@ def receiveCamera(payload):
                 cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
                 
-                cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 12, (0, 0, 255), 2)
-                cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 4, (0, 0, 255), -1)
+                cv2.circle(canvas, (curr_camera_sample.center_x, curr_camera_sample.center_y), 12, (0, 0, 255), 2)
+                cv2.circle(canvas, (curr_camera_sample.center_x, curr_camera_sample.center_y), 4, (0, 0, 255), -1)
                 inv_scale = 1 / avg_scale
-                cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (camera_sample.center_x + 15, camera_sample.center_y + 5),
+                cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (curr_camera_sample.center_x + 15, curr_camera_sample.center_y + 5),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                 cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_dz:.2f} mm", (75, 75),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
