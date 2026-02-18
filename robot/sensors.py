@@ -96,8 +96,8 @@ def receiveCamera(payload):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
 
     if num_tags > 0:
-        avg_cx = int(statistics.mean(cx_list))
-        avg_cy = int(statistics.mean(cy_list))
+        avg_cx = statistics.mean(cx_list)
+        avg_cy = statistics.mean(cy_list)
         avg_scale = statistics.mean(scale_list)
         avg_est_z = statistics.mean(z_list)
 
@@ -108,14 +108,13 @@ def receiveCamera(payload):
             cv_z = (statistics.stdev(z_list) / avg_est_z) if avg_est_z != 0 else 0
             camera_perf.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
-        camera_sample.scale = avg_scale
-        camera_sample.center_x = avg_cx
-        camera_sample.center_y = avg_cy
-        scale = camera_sample.scale # mm / px
+        camera_sample.scale = avg_scale # mm / px
+        camera_sample.center_x = int(avg_cx)
+        camera_sample.center_y = int(avg_cy)
         correction.est_z = avg_est_z
 
-        correction.dx  = (camera_sample.center_x - img_center_x) * scale - pencil_offset_x
-        correction.dy = (camera_sample.center_y - img_center_y) * scale - pencil_offset_y
+        correction.dx  = (avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
+        correction.dy = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
         camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
@@ -127,10 +126,10 @@ def receiveCamera(payload):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
             
             # Putting the target circle on the canvas and logging the predicted point on the image in px
-            cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
-            cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
+            cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 12, (0, 0, 255), 2)
+            cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 4, (0, 0, 255), -1)
             inv_scale = 1 / avg_scale
-            cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (avg_cx + 15, avg_cy + 5),
+            cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (camera_sample.center_x + 15, camera_sample.center_y + 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_est_z:.2f} mm", (75, 75),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
