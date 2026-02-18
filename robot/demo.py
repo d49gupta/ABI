@@ -4,6 +4,8 @@ import cv2
 from robot.globals import *
 import time
 
+last_time = time.perf_counter()
+
 if __name__ == "__main__":
     sensors.connect_sensors()
     sensors.start_sensors()
@@ -50,8 +52,13 @@ if __name__ == "__main__":
             dx = X_TARGET + correction.dx
             dy = Y_TARGET - correction.dy
             dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
+
+            current_time = time.perf_counter()
+            if current_time - last_time < 0.1: # limit to 20 Hz
+                continue
+
+            last_time = current_time
             irc5.move_robot_frame(dx, dy, dz)
-            irc5.read_robot_state()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
@@ -60,9 +67,6 @@ if __name__ == "__main__":
             counter += 1
             correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
-            
-            time.sleep(0.1) # cant send commands too fast
-            # probably move this wait into move_robot_frame and any other send commands
 
     except KeyboardInterrupt:
         print("Shutting down...")
