@@ -4,10 +4,14 @@ import cv2
 from robot.globals import *
 import time
 
+last_time = time.perf_counter()
+
 if __name__ == "__main__":
-    sensor_client = sensors.connect_sensors()
+    sensors.connect_sensors()
     sensors.start_sensors()
-    robot = irc5.connect_robot()
+    print("Connecting to robot...")
+    irc5.connect_robot()
+    irc5.start_reading_robot()
     time.sleep(2)
 
     if not sensors.connection_status() or not irc5.connection_status():
@@ -15,19 +19,30 @@ if __name__ == "__main__":
         print("Failed to connect to sensors or robot.")
         exit(1)
 
-    irc5.read_robot_state()
-    print(f"initial robot position: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
+    if not irc5.connection_status():
+        print(irc5.robot_config.connected, irc5.robot_config.msg_count)
+        print("Failed to connect to robot.")
+        exit(1)
+
     counter = 0
     try:
         while True:
-            with canvas_lock:
-                cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if not sensors.connection_status() or not irc5.connection_status():
+                print("Lost connection to sensors or robot.")
                 break
             
             if not sensors.correction_buffer:
                 correction_logger.warning("No correction data available yet.")
                 continue
+
+            if not irc5.robot_pose_buffer:
+                irc5.robot_logger.warning("No robot pose data available yet.")
+                continue
+
+            with canvas_lock:
+                cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
             if pencil_buffer and pencil_buffer[-1].active:
                 print("PENCIL ACTIVE")
@@ -37,8 +52,13 @@ if __name__ == "__main__":
             dx = X_TARGET + correction.dx
             dy = Y_TARGET - correction.dy
             dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
+
+            current_time = time.perf_counter()
+            if current_time - last_time < ROBOT_PUBLISH_RATE: # limit to 20 Hz
+                continue
+
+            last_time = current_time
             irc5.move_robot_frame(dx, dy, dz)
-            irc5.read_robot_state()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
@@ -48,15 +68,11 @@ if __name__ == "__main__":
             correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
-            if abs(dx*dx + dy*dy) < 1.0:
-                sensors.camera_logger.info("Target Reached")
-                irc5.robot_logger.info("Target Reached")
-                break
-
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:
         print("Disconnecting from robot...")
         irc5.stop_robot()
+        irc5.stop_reading_robot()
         irc5.disconnect_robot()
         sensors.stop_sensors()
