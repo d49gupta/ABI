@@ -3,6 +3,7 @@ MODULE socket_comms
     VAR socketdev server_socket;
     VAR string received_msg;
     VAR string send_msg;
+    VAR string pose_msg;
     VAR robtarget target_pose;
     VAR robtarget current_pose;
     VAR num x_dest;
@@ -31,14 +32,14 @@ MODULE socket_comms
     PROC Send()
         current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
         
-        send_msg := ValToStr(current_pose.trans.x) + "," + 
+        pose_msg := ValToStr(current_pose.trans.x) + "," + 
                     ValToStr(current_pose.trans.y) + "," + 
                     ValToStr(current_pose.trans.z) + "," +
                     ValToStr(current_pose.rot.q1) + "," + 
                     ValToStr(current_pose.rot.q2) + "," + 
                     ValToStr(current_pose.rot.q3) + "," +
                     ValToStr(current_pose.rot.q4);
-        
+        send_msg := pose_msg + "\0A";
         SocketSend client_socket \Str:=send_msg;
     ENDPROC
     
