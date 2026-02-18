@@ -41,18 +41,12 @@ def receivePencil(payload):
     raw = int(data["raw"])
     distance = float(data["millimeters"])
 
-    pencil_logger.info("%d, %.4f", raw, distance)
     pencil_sample.raw = raw
-    pencil_sample.millimeters = distance
-    correction.dz = pencil_sample.millimeters
+    pencil_sample.distance = distance
+    pencil_sample.active = distance >= MIN_PENCIL_Z
 
-    if abs(distance) < MIN_PENCIL_Z:
-        pencil_sample.active = False
-        correction.active_dz = pencil_sample.active
-    else:        
-        pencil_sample.active = True
-        correction.active_dz = pencil_sample.active
-        print("PENCIL SENSOR ACTIVE")
+    pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
+    pencil_buffer.append(pencil_sample)
 
     # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
@@ -65,7 +59,11 @@ def receiveCameraTemp(payload):
     camera_sample.scale = 0.05  # Temporary fixed scale
     correction.dx = camera_sample.center_x * camera_sample.scale
     correction.dy = 0
+
+    camera_buffer.append(camera_sample)
+    correction_buffer.append(correction)
     print(f"Received Camera center: ({center_x}, {center_y})")
+
 
 def receiveCamera(payload):
     global canvas
@@ -91,48 +89,52 @@ def receiveCamera(payload):
         z_list.append(tag["est_z"])
 
         if show:
-            cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
-            cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
+            with canvas_lock:
+                cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
+                cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
 
     if num_tags > 0:
         avg_cx = statistics.mean(cx_list)
         avg_cy = statistics.mean(cy_list)
         avg_scale = statistics.mean(scale_list)
-        avg_est_z = statistics.mean(z_list)
+        avg_dz = statistics.mean(z_list)
 
         if num_tags > 1 and show_camera_info:
             cv_cx = (statistics.stdev(cx_list) / avg_cx) if avg_cx != 0 else 0
             cv_cy = (statistics.stdev(cy_list) / avg_cy) if avg_cy != 0 else 0
             cv_scale = (statistics.stdev(scale_list) / avg_scale) if avg_scale != 0 else 0
-            cv_z = (statistics.stdev(z_list) / avg_est_z) if avg_est_z != 0 else 0
+            cv_z = (statistics.stdev(z_list) / avg_dz) if avg_dz != 0 else 0
             camera_perf.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
         camera_sample.scale = avg_scale # mm / px
         camera_sample.center_x = int(avg_cx)
         camera_sample.center_y = int(avg_cy)
-        correction.est_z = avg_est_z
+        correction.dz = avg_dz
 
         correction.dx  = (avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dy = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
         camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.est_z)
+                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+        
+        camera_buffer.append(camera_sample) # might not need to store any camera samples, just correction values
+        correction_buffer.append(correction)
 
         if show:
-            cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
-            cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
-            
-            # Putting the target circle on the canvas and logging the predicted point on the image in px
-            cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 12, (0, 0, 255), 2)
-            cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 4, (0, 0, 255), -1)
-            inv_scale = 1 / avg_scale
-            cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (camera_sample.center_x + 15, camera_sample.center_y + 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-            cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_est_z:.2f} mm", (75, 75),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            with canvas_lock:
+                cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
+                cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+                
+                cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 12, (0, 0, 255), 2)
+                cv2.circle(canvas, (camera_sample.center_x, camera_sample.center_y), 4, (0, 0, 255), -1)
+                inv_scale = 1 / avg_scale
+                cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (camera_sample.center_x + 15, camera_sample.center_y + 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_dz:.2f} mm", (75, 75),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
     # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
 
@@ -155,7 +157,8 @@ if __name__ == "__main__":
     start_sensors()
 
     while True:
-        cv2.imshow("AprilTag Real-Time Map", canvas)
+        with canvas_lock:
+            cv2.imshow("AprilTag Real-Time Map", canvas)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

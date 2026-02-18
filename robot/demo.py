@@ -20,13 +20,23 @@ if __name__ == "__main__":
     counter = 0
     try:
         while True:
-            cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
+            with canvas_lock:
+                cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+            
+            if not sensors.correction_buffer:
+                correction_logger.warning("No correction data available yet.")
+                continue
 
-            dx = X_TARGET + sensors.correction.dx
-            dy = Y_TARGET - sensors.correction.dy
-            dz = Z_TARGET + sensors.correction.est_z # TODO: NEED to properly account for height diff between TCP and camera)
+            if pencil_buffer and pencil_buffer[-1].active:
+                print("PENCIL ACTIVE")
+                break
+
+            correction = sensors.correction_buffer[-1]
+            dx = X_TARGET + correction.dx
+            dy = Y_TARGET - correction.dy
+            dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
             irc5.move_robot_frame(dx, dy, dz)
             irc5.read_robot_state()
 
@@ -35,8 +45,8 @@ if __name__ == "__main__":
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET
 
             counter += 1
-            diff_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, sensors.correction.dx, 
-                             sensors.correction.dy, sensors.correction.est_z, dx_diff, dy_diff, dz_diff)
+            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", counter, correction.dx, 
+                             correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
             if abs(dx*dx + dy*dy) < 1.0:
                 sensors.camera_logger.info("Target Reached")

@@ -2,6 +2,8 @@ import robot.abb_irc5 as irc5
 import robot.sensors as sensors
 from robot.globals import *
 
+#TODO: Change sensors. to get from global deque
+
 # --- STATES ---
 final_robot_pose = None
 motion_state = MotionState.IDLE
@@ -26,8 +28,6 @@ def move_xyz_sensors():
 
     # TODO: change to using depth estimate
     # TODO: make interrupt to go into pencil mode when flag is active
-    if not sensors.correction.active_dz or abs(sensors.correction.dz) < Z_THRESH:
-        dz = 1.0
     
     irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
     irc5.move_rel_frame(dx, dy, dz)

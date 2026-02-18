@@ -2,6 +2,8 @@ from scripts.logger import CSVLogger
 from dataclasses import dataclass
 import numpy as np
 from enum import Enum
+from collections import deque
+import threading
 
 # --- ENUMS ---
 class MotionState(Enum):
@@ -15,7 +17,7 @@ class MotionState(Enum):
 @dataclass
 class PencilReading:
     raw: int = 0
-    millimeters: float = 0.0
+    distance: float = 0.0
     flag: int = 0
     active: bool = False
 
@@ -24,7 +26,6 @@ class CameraDetection:
     center_x: int = 0
     center_y: int = 0
     scale: float = 0.0
-    # TODO: Add timestamp later for timeout check of sensors
 
 @dataclass
 class MQTTState:
@@ -40,8 +41,6 @@ class CorrectionState:
     dx: float = 0.0
     dy: float = 0.0
     dz: float = 0.0
-    active_dz: bool = False
-    est_z: float = 0.0
 
 @dataclass
 class RobotConfig:
@@ -73,14 +72,19 @@ MIN_PENCIL_Z = 0.25
 PENCIL_Z_OFFSET = 40 # mm
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
+canvas_lock = threading.Lock()
 show = True
 show_camera_info = True
+
+pencil_buffer = deque(maxlen=50)
+camera_buffer = deque(maxlen=5)
+correction_buffer = deque(maxlen=10)
 
 # --- LOGGERS ---
 camera_logger = CSVLogger(name="camera", log_dir="test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 robot_logger = CSVLogger(name="robot", log_dir="test_logs")
-diff_logger = CSVLogger(name="diff", log_dir="test_logs")
+correction_logger = CSVLogger(name="diff", log_dir="test_logs")
 camera_perf = CSVLogger(name="camera_perf", log_dir="test_logs")
 
 # --- CONFIGS ---
