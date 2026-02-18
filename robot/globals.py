@@ -74,12 +74,14 @@ PENCIL_Z_OFFSET = 40 # mm
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 show = True
+show_camera_info = True
 
 # --- LOGGERS ---
 camera_logger = CSVLogger(name="camera", log_dir="test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 robot_logger = CSVLogger(name="robot", log_dir="test_logs")
 diff_logger = CSVLogger(name="diff", log_dir="test_logs")
+camera_perf = CSVLogger(name="camera_perf", log_dir="test_logs")
 
 # --- CONFIGS ---
 subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
