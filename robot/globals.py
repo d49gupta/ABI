@@ -49,6 +49,7 @@ class RobotConfig:
     socket = None
     timeout: float = 30.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
+    robot_file = None
 
 class robotState:
     initial_pos : np.ndarray = None

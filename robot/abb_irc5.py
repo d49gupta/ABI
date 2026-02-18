@@ -11,6 +11,7 @@ def connect_robot():
         robot_config.socket.connect((robot_config.ip_address, robot_config.port))
         robot_config.socket.settimeout(robot_config.timeout)
         robot_config.connected = True
+        robot_config.robot_file = robot_config.socket.makefile('r')
     except (socket.timeout, ConnectionRefusedError, OSError) as e:
         print(f"Connection failed: {e}")
         robot_config.connected = False
@@ -20,10 +21,13 @@ def connection_status():
 
 def read_robot_state():
     try:
-        data = robot_config.socket.recv(1024).decode('utf-8')
-        robot_values = [float(val) for val in data.split(',')]
-        robot_state.pos = np.array(robot_values[0:3])
-        robot_state.orientation = np.array(robot_values[3:7])
+        line = robot_config.robot_file.readline()
+        # data = robot_config.socket.recv(1024).decode('utf-8')
+        if line:
+            # robot_values = [float(val) for val in data.split(',')]
+            robot_values = [float(val) for val in line.strip().split(',')]
+            robot_state.pos = np.array(robot_values[0:3])
+            robot_state.orientation = np.array(robot_values[3:7])
 
         if robot_state.initial_pos is None:
             robot_state.initial_pos = robot_state.pos.copy()
