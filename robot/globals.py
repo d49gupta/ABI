@@ -64,24 +64,28 @@ class robotState:
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 # MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "192.168.1.144"
-ROBOT_IP = "127.0.0.1"
+ROBOT_SIM_IP = "127.0.0.1"
+ROBOT_REAL_IP = "10.60.70.51"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
 
-X_TARGET = 470.896
-Y_TARGET = 19.57
+X_TARGET = 600
+Y_TARGET = 18.93
 Z_TARGET = -905.67
-Z_THRESH = 4.0
-MIN_PENCIL_Z = 0.25
-PENCIL_Z_OFFSET = 40 # mm
-ROBOT_PUBLISH_RATE = 0.07 # seconds
+Z_THRESH = 8.0
+Z_TARGET = 4.0
+Z_ACTIVE = 0.25
+XY_TARGET_ACC = 1.0
+Z_TARGET_ACC = 1.0
+PENCIL_Z_OFFSET = 40 # mm (165)
+ROBOT_PUBLISH_RATE = 0.1 # seconds, should not be faster than camera frequency
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
 show = True
-show_camera_info = True
+show_camera_info = False
 
 # --- BUFFERS ---
 pencil_buffer = deque(maxlen=50)
@@ -94,14 +98,25 @@ correction = CorrectionState()
 pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
+motion_state = MotionState.IDLE
+final_robot_pose = None
 
 # --- LOGGERS ---
 camera_logger = CSVLogger(name="camera", log_dir="test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
 robot_logger = CSVLogger(name="robot", log_dir="test_logs")
 correction_logger = CSVLogger(name="diff", log_dir="test_logs")
-camera_perf = CSVLogger(name="camera_perf", log_dir="test_logs")
+camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
+controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
 subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_IP)
+robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
+
+# --- CONTROLLERS ---
+alpha_camera = 0.1
+smooth_dx = 0.0
+smooth_dy = 0.0
+Kp_camera = 0.1
+Kp_pencil = 0.1
+Kp_ascent = 0.1

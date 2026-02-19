@@ -1,36 +1,82 @@
 import robot.abb_irc5 as irc5
 import robot.sensors as sensors
 from robot.globals import *
-
-#TODO: Change sensors and robot. to get from global deque
-
-# --- STATES ---
-final_robot_pose = None
-motion_state = MotionState.IDLE
+import time
 
 def move_xy_sensors():
-    dx = sensors.correction.dx
-    dy = sensors.correction.dy
-    magnitude = (dx**2 + dy**2)**0.5
-
-    if magnitude > 1.0:
-        dx_norm = dx / magnitude
-        dy_norm = dy / magnitude
+    global motion_state
+    if not sensors.correction_buffer:
+        controller_logger.warning("Not enough correction data for camera smoothing.")
+        return
     
-    irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, 0)
-    irc5.move_rel_frame(dx_norm, dy_norm, 0)
+    global smooth_dx, smooth_dy
+    camera_curr_correction = sensors.correction_buffer[-1]
+    smooth_dx = (alpha_camera * camera_curr_correction.dx) + (1 - alpha_camera) * smooth_dx
+    smooth_dy = (alpha_camera * camera_curr_correction.dy) + (1 - alpha_camera) * smooth_dy
+    magnitude = (smooth_dx**2 + smooth_dy**2)**0.5
+
+    if not irc5.robot_pose_buffer:
+        controller_logger.warning("Not enough robot pose data for camera smoothing.")
+        return
+
+    if magnitude > XY_TARGET_ACC: 
+        robot_pose = irc5.robot_pose_buffer[-1].pos
+        dx = robot_pose[0] + Kp_camera * smooth_dx
+        dy = robot_pose[1] - Kp_camera * smooth_dy
+        controller_logger.info("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", smooth_dx, smooth_dy, 
+                         camera_curr_correction.dx, camera_curr_correction.dy, robot_pose[0], robot_pose[1], dx, dy)
+        # irc5.move_robot_frame(dx, dy, 0) # Larger corrections
+    else:
+        print(f"Camera Correction Target Reached")
+        controller_logger.info("Camera Correction Target Reached (%.4f, %.4f)", robot_pose[0], robot_pose[1])
+        motion_state = MotionState.DESCEND
 
 def move_xyz_sensors():
     # dx and dy magnitude should be less than 1.0
-    dx = sensors.correction.dx
-    dy = sensors.correction.dy
-    dz = 0.0
-
-    # TODO: change to using depth estimate
-    # TODO: make interrupt to go into pencil mode when flag is active
+    # keep moving down by dz = -1.0 to allow for small xy corrections
+    # Main loop will trigger pencil interrupt to go into next state
+    dx = Kp_camera * sensors.correction.dx
+    dy = Kp_camera * sensors.correction.dy
+    dz = -1.0
     
-    irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
-    irc5.move_rel_frame(dx, dy, dz)
+    controller_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
+    # irc5.move_rel_frame(dx, dy, dz)
+
+def find_pencil_depth():
+    global motion_state, final_robot_pose
+
+    if not pencil_buffer:
+        controller_logger.warning("No pencil data available for depth finding.")
+        irc5.stop_robot()
+        return
+
+    latest_pencil = pencil_buffer[-1]
+    error = latest_pencil.distance - Z_TARGET
+
+    if abs(error) < Z_TARGET_ACC:
+        print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
+        controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
+        final_robot_pose = irc5.robot_state.pos.copy()
+        time.sleep(5.0)
+        motion_state = MotionState.ASCEND
+        return
+
+    dz = error * Kp_pencil
+    if abs(latest_pencil.distance - dz) < Z_THRESH: # Make sure to never depress too far and break pencil
+        irc5.move_rel_frame(0, 0, dz)
+        controller_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
+
+def ascent():
+    global motion_state
+    ascent_diff = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
+    if abs(ascent_diff) < 5.0:
+        print("Ascent Complete")
+        controller_logger.info("Ascent Complete")
+        motion_state = MotionState.IDLE
+
+    dz = ascent_diff * Kp_ascent
+    controller_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
+    irc5.move_rel_frame(0, 0, dz)
 
 def move_xy_target():
     global motion_state
@@ -70,17 +116,6 @@ def move_xyz_target():
 
     irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
     irc5.move_rel_frame(dx_norm, dy_norm, dz_norm)
-
-def ascent():
-    global motion_state
-    dz = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
-    if abs(dz) < 10.0:
-        print("Ascent Complete")
-        irc5.robot_logger.info("Ascent Complete")
-        motion_state = MotionState.IDLE
-
-    irc5.robot_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
-    irc5.move_rel_frame(0, 0, 1)
 
 if __name__ == "__main__":
     sensor_client = sensors.connect_sensors()

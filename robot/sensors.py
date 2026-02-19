@@ -39,7 +39,7 @@ def receivePencil(payload):
 
     pencil_sample.raw = raw
     pencil_sample.distance = distance
-    pencil_sample.active = distance >= MIN_PENCIL_Z
+    pencil_sample.active = distance >= Z_ACTIVE
 
     pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
@@ -102,12 +102,12 @@ def receiveCamera(payload):
             cv_cy = (statistics.stdev(cy_list) / avg_cy) if avg_cy != 0 else 0
             cv_scale = (statistics.stdev(scale_list) / avg_scale) if avg_scale != 0 else 0
             cv_z = (statistics.stdev(z_list) / avg_dz) if avg_dz != 0 else 0
-            camera_perf.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
+            camera_perf_logger.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
         camera_sample.scale = avg_scale # mm / px
         camera_sample.center_x = int(avg_cx)
         camera_sample.center_y = int(avg_cy)
-        correction.dz = avg_dz
+        correction.dz = avg_dz - PENCIL_Z_OFFSET
 
         correction.dx  = (avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dy = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
