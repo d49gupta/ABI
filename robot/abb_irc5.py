@@ -1,47 +1,55 @@
 import socket
 import numpy as np
-from dataclasses import dataclass
-from scripts.logger import CSVLogger
-
-# --- DATACLASS ---
-@dataclass
-class RobotConfig:
-    ip_address: str = '127.0.0.1'
-    port: int = 5000
-    socket = None
-    timeout: float = 30.0
-
-class robotState:
-    initial_pos : np.ndarray = None
-    pos : np.ndarray = None
-    orientation : np.ndarray = None
-
-# --- GLOBALS ---
-robot_logger = CSVLogger(name="robot", log_dir="test_logs")
-
-# --- STATE ---
-robot_state = robotState()
-robot_config = RobotConfig()
+from robot.globals import *
+from dataclasses import replace
+import time
 
 def connect_robot():
-    robot_config.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    robot_config.socket.connect((robot_config.ip_address, robot_config.port))
-    robot_config.socket.settimeout(robot_config.timeout)
+    try:
+        robot_config.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        robot_config.socket.connect((robot_config.ip_address, robot_config.port))
+        robot_config.socket.settimeout(robot_config.timeout)
+        robot_config.connected = True
+        robot_config.robot_file = robot_config.socket.makefile('r')
+        robot_config.read_thread = threading.Thread(target=read_robot_state, daemon=True)
+        robot_config.stop_trigger = threading.Event()
+
+    except (socket.timeout, ConnectionRefusedError, OSError) as e:
+        print(f"Connection failed: {e}")
+        robot_config.connected = False
+
+def connection_status():
+    return robot_config.connected and robot_config.msg_count > 0
 
 def read_robot_state():
-    try:
-        data = robot_config.socket.recv(1024).decode('utf-8')
-        robot_values = [float(val) for val in data.split(',')]
-        robot_state.pos = np.array(robot_values[0:3])
-        robot_state.orientation = np.array(robot_values[3:7])
+    while not robot_config.stop_trigger.is_set():
+        try:
+            line = robot_config.robot_file.readline()
+            # line = robot_config.socket.recv(1024).decode('utf-8')
+            if line:
+                robot_config.msg_count += 1
+                # robot_values = [float(val) for val in line.split(',')]
+                robot_values = [float(val) for val in line.strip().split(',')]
+                robot_state.pos = np.array(robot_values[0:3])
+                robot_state.orientation = np.array(robot_values[3:7])
 
-        if robot_state.initial_pos is None:
-            robot_state.initial_pos = robot_state.pos.copy()
+                if robot_state.initial_pos is None:
+                    robot_state.initial_pos = robot_state.pos.copy()
 
-        robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", robot_state.pos[0], robot_state.pos[1], robot_state.pos[2], 
-                        robot_state.orientation[0], robot_state.orientation[1], robot_state.orientation[2], robot_state.orientation[3])
-    except socket.timeout:
-        print("Timeout: No data received from robot.")
+                curr_robot_state = replace(robot_state)
+                robot_pose_buffer.append(curr_robot_state)
+                robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
+                                curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3])
+        except socket.timeout:
+            robot_logger.warning("Timeout: No data received from robot.")
+            print("Timeout: No data received from robot.")
+
+def start_reading_robot():
+    robot_config.read_thread.start()
+
+def stop_reading_robot():
+    robot_config.stop_trigger.set()
+    robot_config.read_thread.join(timeout=2.0)
 
 def get_displacement():
     if robot_state.initial_pos is None or robot_state.pos is None:
@@ -62,3 +70,18 @@ def move_robot_frame(x, y, z):
 
 def disconnect_robot():
     robot_config.socket.close()
+
+if __name__ == "__main__":
+    connect_robot()
+    start_reading_robot()
+    time.sleep(2)  # Wait for connection to establish
+
+    try:
+        while True:
+            print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
+    except KeyboardInterrupt:
+        print("Shutting down...")
+    finally:
+        print("Disconnecting from robot...")
+        stop_reading_robot()
+        disconnect_robot()

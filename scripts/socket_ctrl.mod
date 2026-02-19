@@ -3,6 +3,7 @@ MODULE socket_comms
     VAR socketdev server_socket;
     VAR string received_msg;
     VAR string send_msg;
+    VAR string pose_msg;
     VAR robtarget target_pose;
     VAR robtarget current_pose;
     VAR num x_dest;
@@ -11,6 +12,7 @@ MODULE socket_comms
     VAR bool good_command;
     VAR bool good_data;
     VAR string client_ip := "127.0.0.1";
+    VAR socketstatus status;
     
     VAR intnum comma_index;
     VAR num command_id;
@@ -31,14 +33,14 @@ MODULE socket_comms
     PROC Send()
         current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
         
-        send_msg := ValToStr(current_pose.trans.x) + "," + 
+        pose_msg := ValToStr(current_pose.trans.x) + "," + 
                     ValToStr(current_pose.trans.y) + "," + 
                     ValToStr(current_pose.trans.z) + "," +
                     ValToStr(current_pose.rot.q1) + "," + 
                     ValToStr(current_pose.rot.q2) + "," + 
                     ValToStr(current_pose.rot.q3) + "," +
                     ValToStr(current_pose.rot.q4);
-        
+        send_msg := pose_msg + "\0A";
         SocketSend client_socket \Str:=send_msg;
     ENDPROC
     
@@ -69,7 +71,7 @@ MODULE socket_comms
     ENDPROC
         
     PROC MOVE_REL()
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v10, fine, toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v5, fine, toolBladeTest;
     ENDPROC
     
     PROC MOVE_WORLD()
@@ -77,7 +79,7 @@ MODULE socket_comms
     ENDPROC
     
     PROC MOVE_BODY()
-        MOVEL target_pose, v50, z1, toolBladeTest;
+        MoveL target_pose, v50, z1, toolBladeTest;
     ENDPROC
     
     PROC closeSocket()
