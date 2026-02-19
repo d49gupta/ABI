@@ -12,6 +12,7 @@ MODULE socket_comms
     VAR bool good_command;
     VAR bool good_data;
     VAR string client_ip := "127.0.0.1";
+    VAR socketstatus status;
     
     VAR intnum comma_index;
     VAR num command_id;
@@ -70,7 +71,7 @@ MODULE socket_comms
     ENDPROC
         
     PROC MOVE_REL()
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v10, fine, toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v5, fine, toolBladeTest;
     ENDPROC
     
     PROC MOVE_WORLD()
@@ -78,7 +79,7 @@ MODULE socket_comms
     ENDPROC
     
     PROC MOVE_BODY()
-        MOVEL target_pose, v50, z1, toolBladeTest;
+        MoveL target_pose, v50, z1, toolBladeTest;
     ENDPROC
     
     PROC closeSocket()
