@@ -3,6 +3,8 @@ import robot.sensors as sensors
 from robot.globals import *
 import time
 
+last_time = time.perf_counter()
+
 def move_xy_sensors():
     global motion_state
     if not sensors.correction_buffer:
@@ -43,7 +45,11 @@ def move_xyz_sensors():
     # irc5.move_rel_frame(dx, dy, dz)
 
 def find_pencil_depth():
-    global motion_state, final_robot_pose
+    global motion_state, final_robot_pose, last_time
+
+    current_time = time.perf_counter()
+    if current_time - last_time < PENCIL_MOVE_RATE:
+        return
 
     if not pencil_buffer:
         controller_logger.warning("No pencil data available for depth finding.")

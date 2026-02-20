@@ -47,7 +47,7 @@ class RobotConfig:
     ip_address: str = '127.0.0.1'
     port: int = 5000
     socket = None
-    timeout: float = 30.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
+    timeout: float = 5.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
     msg_count: int = 0
     robot_file = None
@@ -81,6 +81,7 @@ XY_TARGET_ACC = 1.0
 Z_TARGET_ACC = 1.0
 PENCIL_Z_OFFSET = 40 # mm (165)
 ROBOT_PUBLISH_RATE = 0.1 # seconds, should not be faster than camera frequency
+PENCIL_MOVE_RATE = 1.0
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
