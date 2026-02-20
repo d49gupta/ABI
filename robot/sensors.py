@@ -156,8 +156,9 @@ if __name__ == "__main__":
     start_sensors()
 
     while True:
-        with canvas_lock:
-            cv2.imshow("AprilTag Real-Time Map", canvas)
+        if show:
+            with canvas_lock:
+                cv2.imshow("AprilTag Real-Time Map", canvas)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

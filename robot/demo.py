@@ -6,6 +6,7 @@ import time
 from robot.main import *
 
 if __name__ == "__main__":
+    print("Connecting to sensors")
     sensors.connect_sensors()
     sensors.start_sensors()
     print("Connecting to robot...")
@@ -36,9 +37,10 @@ if __name__ == "__main__":
             if not irc5.robot_pose_buffer:
                 irc5.robot_logger.warning("No robot pose data available yet.")
                 continue
-
-            with canvas_lock:
-                cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
+            
+            if show:
+                with canvas_lock:
+                    cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
