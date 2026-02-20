@@ -4,6 +4,7 @@ import numpy as np
 from enum import Enum
 from collections import deque
 import threading
+import time
 
 # --- ENUMS ---
 class MotionState(Enum):
@@ -101,6 +102,7 @@ camera_sample = cameraState()
 robot_state = robotState()
 motion_state = MotionState.IDLE
 final_robot_pose = None
+state_last_time = time.perf_counter()
 
 # --- LOGGERS ---
 camera_logger = CSVLogger(name="camera", log_dir="test_logs")

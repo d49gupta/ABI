@@ -3,8 +3,6 @@ import robot.sensors as sensors
 from robot.globals import *
 import time
 
-last_time = time.perf_counter()
-
 def move_xy_sensors():
     global motion_state
     if not sensors.correction_buffer:
@@ -45,11 +43,7 @@ def move_xyz_sensors():
     # irc5.move_rel_frame(dx, dy, dz)
 
 def find_pencil_depth():
-    global motion_state, final_robot_pose, last_time
-
-    current_time = time.perf_counter()
-    if current_time - last_time < PENCIL_MOVE_RATE:
-        return
+    global motion_state, final_robot_pose
 
     if not pencil_buffer:
         controller_logger.warning("No pencil data available for depth finding.")
@@ -69,7 +63,7 @@ def find_pencil_depth():
 
     dz = error * Kp_pencil
     if abs(latest_pencil.distance - dz) < Z_THRESH: # Make sure to never depress too far and break pencil
-        irc5.move_rel_frame(0, 0, dz)
+        # irc5.move_rel_frame(0, 0, dz)
         controller_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
 
 def ascent():
@@ -82,7 +76,23 @@ def ascent():
 
     dz = ascent_diff * Kp_ascent
     controller_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
-    irc5.move_rel_frame(0, 0, dz)
+    # irc5.move_rel_frame(0, 0, dz)
+
+def state_machine():
+    global state_last_time
+    current_time = time.perf_counter()
+    time_interval = current_time - state_last_time
+    if motion_state == MotionState.FIND_CENTER:
+        move_xy_sensors()
+    elif motion_state == MotionState.DESCEND:
+        move_xyz_sensors()
+    elif motion_state == MotionState.FIND_DEPTH and time_interval >= PENCIL_MOVE_RATE:
+        find_pencil_depth()
+        state_last_time = current_time
+    elif motion_state == MotionState.ASCEND:
+        ascent()
+    else:
+        return
 
 def move_xy_target():
     global motion_state

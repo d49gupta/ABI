@@ -5,8 +5,6 @@ from robot.globals import *
 import time
 from robot.main import *
 
-last_time = time.perf_counter()
-
 if __name__ == "__main__":
     sensors.connect_sensors()
     sensors.start_sensors()
@@ -20,8 +18,13 @@ if __name__ == "__main__":
         print("Failed to connect to sensors or robot.")
         exit(1)
 
+    last_time = time.perf_counter()
+    motion_state = MotionState.FIND_CENTER
     try:
         while True:
+            if motion_state == MotionState.IDLE:
+                break
+
             if not sensors.connection_status() or not irc5.connection_status():
                 print("Lost connection to sensors or robot.")
                 break
@@ -43,9 +46,7 @@ if __name__ == "__main__":
                 motion_state = MotionState.FIND_DEPTH
                 controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
                 print("Pencil Detected. Switching to FIND_DEPTH mode.")
-                find_pencil_depth()
-                break
-
+                
             correction = sensors.correction_buffer[-1]
             dx = X_TARGET + correction.dx
             dy = Y_TARGET - correction.dy
@@ -57,7 +58,7 @@ if __name__ == "__main__":
 
             last_time = current_time
             irc5.move_robot_frame(dx, dy, dz)
-            move_xy_sensors()
+            state_machine()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
