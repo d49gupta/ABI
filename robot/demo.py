@@ -48,6 +48,7 @@ if __name__ == "__main__":
                 motion_state = MotionState.FIND_DEPTH
                 controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
                 print("Pencil Detected. Switching to FIND_DEPTH mode.")
+                time.sleep(5)
                 
             correction = sensors.correction_buffer[-1]
             dx = X_TARGET + correction.dx
@@ -66,7 +67,7 @@ if __name__ == "__main__":
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET
 
-            correction_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", correction.dx, 
+            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", motion_state, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
     except KeyboardInterrupt:

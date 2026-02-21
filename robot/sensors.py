@@ -22,9 +22,15 @@ def on_message(client, userdata, msg):
         payload = msg.payload.decode("utf-8")
         subscriber.msg_count += 1
         if msg.topic == subscriber.pencil_topic:
-            receivePencil(payload)
+            if MQTTState.mqtt_broker == SIM_MQTT_BROKER:
+                receivePencilSim(payload)
+            else:
+                receivePencil(payload)
         elif msg.topic == subscriber.camera_topic:
-            receiveCamera(payload)
+            if MQTTState.mqtt_broker == SIM_MQTT_BROKER:
+                receiveCameraSim(payload)
+            else:
+                receiveCamera(payload)
 
     except Exception as e:
             print(f"Error processing message on {msg.topic}: {e}")
@@ -41,26 +47,26 @@ def receivePencil(payload):
     pencil_sample.distance = distance
     pencil_sample.active = distance >= Z_ACTIVE
 
-    pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %d, %.4f, %d", motion_state, raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
     # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
-def receiveCameraTemp(payload):
+def receivePencilSim(payload):
     data = json.loads(payload)
-    center_x = int(data["center_x"])
-    center_y = int(data["center_y"])
-    camera_sample.center_x = center_x
-    camera_sample.center_y = center_y
-    camera_sample.scale = 0.05  # Temporary fixed scale
-    correction.dx = camera_sample.center_x * camera_sample.scale
-    correction.dy = 0
+    pencil_sample.timestamp = int(data["ms"])
+    pencil_sample.distance = float(data["dist"])
+    curr_pencil_sample = replace(pencil_sample)
+    pencil_buffer.append(curr_pencil_sample)
 
-    camera_buffer.append(camera_sample)
-    correction_buffer.append(correction)
-    print(f"Received Camera center: ({center_x}, {center_y})")
-
+def receiveCameraSim(payload):
+    data = json.loads(payload)
+    correction.timestamp = int(data["ms"])
+    correction.dx = int(data["correction_x"])
+    correction.dy = int(data["correction_y"])
+    curr_correction_sample = replace(correction)
+    correction_buffer.append(curr_correction_sample)
 
 def receiveCamera(payload):
     global canvas
@@ -113,8 +119,8 @@ def receiveCamera(payload):
         correction.dy = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
-        camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+        camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
+                           motion_state, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)

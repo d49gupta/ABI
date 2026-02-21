@@ -9,7 +9,6 @@ class CSVLogger:
             self.parent = parent
 
         def filter(self, record):
-            # Attach the current counter value to the record
             record.msg_cnt = self.parent.counter
             return True
 
@@ -21,7 +20,6 @@ class CSVLogger:
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
 
-        # Clear existing handlers/filters if re-initializing (important for Pi stability)
         if self.logger.handlers:
             self.logger.handlers.clear()
         if self.logger.filters:
@@ -35,7 +33,7 @@ class CSVLogger:
         formatter = logging.Formatter(
             "%(asctime)s.%(msecs)03d,%(relativeCreated)d,%(module)s,%(lineno)d,%(levelname)s,%(msg_cnt)d,%(message)s",
             datefmt="%H:%M:%S"
-        )
+        ) # TODO: Change from mscecs to using reference time calculated from main
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 

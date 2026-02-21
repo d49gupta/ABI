@@ -3,14 +3,13 @@ import paho.mqtt.client as mqtt
 import time
 import json
 import threading
-import sys
 import signal
 
 # --- CONFIG ---
 BROKER_ADDRESS = "127.0.0.1"
 PORT = 1883
-CAMERA_CSV = "C:/Users/dharm/OneDrive - University of Waterloo/Documents/School/Fourth Year/Capstone/ABI/logs/camera_logger_logs.csv"
-PENCIL_CSV = "C:/Users/dharm/OneDrive - University of Waterloo/Documents/School/Fourth Year/Capstone/ABI/logs/pencil_logger_logs.csv"
+CAMERA_CSV = "C:/Users/dharm/OneDrive - University of Waterloo/Documents/School/Fourth Year/Capstone/ABI/test_logs/camera_logs.csv"
+PENCIL_CSV = "C:/Users/dharm/OneDrive - University of Waterloo/Documents/School/Fourth Year/Capstone/ABI/test_logs/pencil_logs.csv"
 
 PENCIL_TOPIC = "pencil/reading"
 CAMERA_TOPIC = "camera/detections"
@@ -37,11 +36,10 @@ def pencil_worker(client, df):
             break
 
         payload = json.dumps({
-            "raw": int(row["ADC"]),
+            "ms": int(row["ms"]),
             "millimeters": float(row["dist"]),
-            "flag": int(row["flag"])
         })
-        print(f"Pencil Thread: Publishing raw {row['ADC']}, dist {row['dist']}, flag {row['flag']}")
+        print(f"Pencil Thread publishing")
         
         with mqtt_lock:
             client.publish(PENCIL_TOPIC, payload)
@@ -58,10 +56,11 @@ def camera_worker(client, df):
             break
 
         payload = json.dumps({
-            "center_x": int(row["center_x"]),
-            "center_y": int(row["center_y"])
+            "ms": int(row["ms"]),
+            "correction_x": int(row["correction_x"]),
+            "correction_y": int(row["correction_y"])
         })
-        print(f"Camera Thread: Publishing center ({row['center_x']}, {row['center_y']})")
+        print(f"Camera Thread publishing")
         
         with mqtt_lock:
             client.publish(CAMERA_TOPIC, payload)
@@ -73,6 +72,7 @@ def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, "simulator")
     client.connect(BROKER_ADDRESS, PORT)
 
+    print("Starting simulation")
     try:
         pencil_df = pd.read_csv(PENCIL_CSV)
         camera_df = pd.read_csv(CAMERA_CSV)

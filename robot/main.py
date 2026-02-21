@@ -2,6 +2,7 @@ import robot.abb_irc5 as irc5
 import robot.sensors as sensors
 from robot.globals import *
 import time
+import cv2
 
 def move_xy_sensors():
     global motion_state
@@ -30,6 +31,7 @@ def move_xy_sensors():
         print(f"Camera Correction Target Reached")
         controller_logger.info("Camera Correction Target Reached (%.4f, %.4f)", robot_pose[0], robot_pose[1])
         motion_state = MotionState.DESCEND
+        time.sleep(5)
 
 def move_xyz_sensors():
     # dx and dy magnitude should be less than 1.0
@@ -133,31 +135,60 @@ def move_xyz_target():
     irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
     irc5.move_rel_frame(dx_norm, dy_norm, dz_norm)
 
-if __name__ == "__main__":
-    sensor_client = sensors.connect_sensors()
-    sensors.start_sensors()
-    robot = irc5.connect_robot()
-    motion_state = MotionState.FIND_CENTER
-    
-    try:
-        while motion_state == MotionState.FIND_CENTER:
-            irc5.read_robot_state()
-            print(f"Current Position: {irc5.robot_state.pos}, Orientation: {irc5.robot_state.orientation}")
-            move_xy_target()
-        while motion_state == MotionState.DESCEND:
-            irc5.read_robot_state()
-            print(f"Current Position: {irc5.robot_state.pos}, Orientation: {irc5.robot_state.orientation}")
-            move_xyz_target()
-        while motion_state == MotionState.ASCEND:
-            irc5.read_robot_state()
-            print(f"Current Position: {irc5.robot_state.pos}, Orientation: {irc5.robot_state.orientation}")
-            ascent()
 
+if __name__ == "__main__":
+    print("Connecting to sensors")
+    sensors.connect_sensors()
+    sensors.start_sensors()
+    print("Connecting to robot...")
+    irc5.connect_robot()
+    irc5.start_reading_robot()
+    time.sleep(2)
+
+    if not sensors.connection_status() or not irc5.connection_status():
+        print(sensors.connection_status(), irc5.connection_status())
+        print("Failed to connect to sensors or robot.")
+        exit(1)
+
+    last_time = time.perf_counter()
+    motion_state = MotionState.FIND_CENTER
+    try:
+        while True:
+            if motion_state == MotionState.IDLE:
+                break
+
+            if not sensors.connection_status() or not irc5.connection_status():
+                print("Lost connection to sensors or robot.")
+                break
+            
+            if not sensors.correction_buffer:
+                correction_logger.warning("No correction data available yet.")
+                continue
+
+            if not irc5.robot_pose_buffer:
+                irc5.robot_logger.warning("No robot pose data available yet.")
+                continue
+            
+            if show:
+                with canvas_lock:
+                    cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+            if pencil_buffer and pencil_buffer[-1].active:
+                motion_state = MotionState.FIND_DEPTH
+                controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
+                print("Pencil Detected. Switching to FIND_DEPTH mode.")
+                time.sleep(5)
+
+            state_machine()
+            
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:
         print("Disconnecting from robot...")
         irc5.stop_robot()
+        irc5.stop_reading_robot()
         irc5.disconnect_robot()
         sensors.stop_sensors()
         # TODO: Send command to pi to stop vision processing

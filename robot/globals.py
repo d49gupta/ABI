@@ -19,14 +19,15 @@ class MotionState(Enum):
 class pencilState:
     raw: int = 0
     distance: float = 0.0
-    flag: int = 0
     active: bool = False
+    timestamp: int = 0
 
 @dataclass
 class cameraState:
     center_x: int = 0
     center_y: int = 0
     scale: float = 0.0
+    timestamp: int = 0
 
 @dataclass
 class MQTTState:
@@ -42,6 +43,7 @@ class CorrectionState:
     dx: float = 0.0
     dy: float = 0.0
     dz: float = 0.0
+    timestamp: int = 0
 
 @dataclass
 class RobotConfig:
@@ -60,10 +62,11 @@ class robotState:
     initial_pos : np.ndarray = None
     pos : np.ndarray = None
     orientation : np.ndarray = None
+    timestamp: int = 0
 
 # --- GLOBALS ---
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
-# MQTT_BROKER = "127.0.0.1"
+SIM_MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "192.168.1.144"
 ROBOT_SIM_IP = "127.0.0.1"
 ROBOT_REAL_IP = "10.60.70.51"
@@ -91,7 +94,7 @@ show_camera_info = False
 
 # --- BUFFERS ---
 pencil_buffer = deque(maxlen=50)
-camera_buffer = deque(maxlen=5)
+camera_buffer = deque(maxlen=10)
 correction_buffer = deque(maxlen=10)
 robot_pose_buffer = deque(maxlen=25)
 
@@ -113,7 +116,7 @@ camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
 controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
-subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
+subscriber = MQTTState(mqtt_broker=SIM_MQTT_BROKER)
 robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
 
 # --- CONTROLLERS ---
