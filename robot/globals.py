@@ -20,14 +20,14 @@ class pencilState:
     raw: int = 0
     distance: float = 0.0
     active: bool = False
-    timestamp: int = 0
+    timestamp: float = 0
 
 @dataclass
 class cameraState:
     center_x: int = 0
     center_y: int = 0
     scale: float = 0.0
-    timestamp: int = 0
+    timestamp: float = 0
 
 @dataclass
 class MQTTState:
@@ -37,13 +37,14 @@ class MQTTState:
     port: int = 1883
     client = None
     msg_count: int = 0
+    start_time: float = 0
 
 @dataclass
 class CorrectionState:
     dx: float = 0.0
     dy: float = 0.0
     dz: float = 0.0
-    timestamp: int = 0
+    timestamp: float = 0
 
 @dataclass
 class RobotConfig:
@@ -67,7 +68,7 @@ class robotState:
 # --- GLOBALS ---
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 SIM_MQTT_BROKER = "127.0.0.1"
-MQTT_BROKER = "192.168.1.144"
+MQTT_BROKER = "172.20.10.5"
 ROBOT_SIM_IP = "127.0.0.1"
 ROBOT_REAL_IP = "10.60.70.51"
 WINDOW_WIDTH = 640
@@ -116,7 +117,7 @@ camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
 controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
-subscriber = MQTTState(mqtt_broker=SIM_MQTT_BROKER)
+subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
 robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
 
 # --- CONTROLLERS ---

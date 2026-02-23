@@ -22,12 +22,12 @@ def on_message(client, userdata, msg):
         payload = msg.payload.decode("utf-8")
         subscriber.msg_count += 1
         if msg.topic == subscriber.pencil_topic:
-            if MQTTState.mqtt_broker == SIM_MQTT_BROKER:
+            if subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receivePencilSim(payload)
             else:
                 receivePencil(payload)
         elif msg.topic == subscriber.camera_topic:
-            if MQTTState.mqtt_broker == SIM_MQTT_BROKER:
+            if subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receiveCameraSim(payload)
             else:
                 receiveCamera(payload)
@@ -46,8 +46,10 @@ def receivePencil(payload):
     pencil_sample.raw = raw
     pencil_sample.distance = distance
     pencil_sample.active = distance >= Z_ACTIVE
+    timestamp = time.perf_counter() - subscriber.start_time
+    pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %d, %.4f, %d", motion_state, raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %d, %.4f, %d", motion_state.value, raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
@@ -110,17 +112,21 @@ def receiveCamera(payload):
             cv_z = (statistics.stdev(z_list) / avg_dz) if avg_dz != 0 else 0
             camera_perf_logger.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
+        timestamp = time.perf_counter() - subscriber.start_time
         camera_sample.scale = avg_scale # mm / px
         camera_sample.center_x = int(avg_cx)
         camera_sample.center_y = int(avg_cy)
-        correction.dz = avg_dz - PENCIL_Z_OFFSET
+        camera_sample.timestamp = timestamp
 
+        correction.dz = avg_dz - PENCIL_Z_OFFSET
         correction.dx  = (avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dy = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
+        correction.timestamp = timestamp
+
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
         camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           motion_state, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+                           motion_state.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
@@ -156,6 +162,7 @@ def start_sensors():
 
 def stop_sensors():
     subscriber.client.loop_stop()
+    subscriber.start_time = time.perf_counter()
 
 if __name__ == "__main__":
     connect_sensors()
