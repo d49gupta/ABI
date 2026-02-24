@@ -38,7 +38,7 @@ def read_robot_state():
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
-                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", motion_state, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
+                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", motion_state.value, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
                                 curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3])
         except socket.timeout:
             robot_logger.warning("Timeout: No data received from robot.")
@@ -66,6 +66,10 @@ def stop_robot():
 
 def move_robot_frame(x, y, z):
     command = f"3, {x}, {y}, {z}"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
+def yaw_robot(angle):
+    command = f"4,{angle}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def disconnect_robot():

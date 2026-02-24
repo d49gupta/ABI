@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from collections import deque
-import random
 import time
 from robot.globals import *
 from robot.sensors import *
@@ -23,7 +22,6 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
 plt.subplots_adjust(hspace=0.4)
 
 # Configure Top Plot
-ax1.set_ylim(-100, 100)
 ax1.set_title("Sensor Readings")
 ax1.grid(True, alpha=0.3)
 line_dx, = ax1.plot([], [], label='dx', color='#ff4b4b')
@@ -32,7 +30,7 @@ line_dz, = ax1.plot([], [], label='dz', color='#3498db')
 ax1.legend(loc='upper right', ncol=3)
 
 # Configure Bottom Plot
-ax2.set_ylim(0, 500)
+ax2.set_ylim(0, 6)
 ax2.set_title("Robot State")
 ax2.grid(True, alpha=0.3)
 line_state, = ax2.plot([], [], label='state', color='#9b59b6', lw=2)
@@ -68,6 +66,9 @@ def update(frame):
         latest_now = max(tx_data[-1], tz_data[-1])
         ax1.set_xlim(latest_now - 5, latest_now)
         ax2.set_xlim(latest_now - 5, latest_now)
+        min_val = min(0, min(dx_data[-1], dy_data[-1], dz_data[-1]))
+        max_val = max(0, min(dx_data[-1], dy_data[-1], dz_data[-1]))
+        ax1.set_ylim(min_val, max_val) # change to dynamic scaling
 
     return line_dx, line_dy, line_dz, line_state
 

@@ -11,21 +11,22 @@ MODULE socket_comms
     VAR num z_dest;
     VAR bool good_command;
     VAR bool good_data;
-    VAR string client_ip := "127.0.0.1";
+    VAR string client_sim_ip := "127.0.0.1";
+    VAR string client_real_ip := "10.60.70.51";
     VAR socketstatus status;
-    
+    VAR num yaw_angle;
     VAR intnum comma_index;
     VAR num command_id;
     VAR string id_str;
     VAR string data_str;
     VAR pos move_data;
     TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
-
+    VAR speeddata vSlowYaw := [10, 10, 1000, 1000];
     
     PROC openSocket()
         target_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0); ! Default is tool0      
         SocketCreate server_socket;
-        SocketBind server_socket, client_ip, 5000;
+        SocketBind server_socket, client_sim_ip, 5000;
         SocketListen server_socket;
         SocketAccept server_socket, client_socket;
     ENDPROC
@@ -55,17 +56,30 @@ MODULE socket_comms
             CASE 1:
                 data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
                 good_data := StrToVal(data_str, move_data);
-                MOVE_REL;
+                
+                IF good_data THEN
+                    MOVE_REL;
+                ENDIF
             CASE 2:
                 StopMove;
                 closeSocket;
             CASE 3:
                 data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
                 good_data := StrToVal(data_str, move_data);
-                target_pose.trans.x := move_data.x;
-                target_pose.trans.y := move_data.y;
-                target_pose.trans.z := move_data.z;
-                MOVE_BODY;
+                
+                IF good_data THEN
+                    target_pose.trans.x := move_data.x;
+                    target_pose.trans.y := move_data.y;
+                    target_pose.trans.z := move_data.z;
+                    MOVE_BODY;
+                ENDIF
+            CASE 4:
+                data_str := StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index);
+                good_data := StrToVal(data_str, yaw_angle);
+                
+                IF good_data THEN
+                    YAW_TOOL;
+                ENDIF
             ENDTEST
         ENDIF
     ENDPROC
@@ -80,6 +94,11 @@ MODULE socket_comms
     
     PROC MOVE_BODY()
         MoveL target_pose, v50, z1, toolBladeTest;
+    ENDPROC
+    
+    PROC YAW_TOOL()
+        current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
+        MoveL RelTool(current_pose, 0, 0, 0 \Rz:=yaw_angle), vSlowYaw, fine, toolBladeTest; ! positive clockwise
     ENDPROC
     
     PROC closeSocket()
