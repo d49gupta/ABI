@@ -5,6 +5,7 @@ import cv2
 import statistics
 from robot.globals import *
 from dataclasses import replace
+import robot.main as main
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
@@ -49,7 +50,7 @@ def receivePencil(payload):
     timestamp = time.perf_counter() - subscriber.start_time
     pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %d, %.4f, %d", motion_state.value, raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %d, %.4f, %d", main.motion_state.value, raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
@@ -126,7 +127,7 @@ def receiveCamera(payload):
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
         camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           motion_state.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+                           main.motion_state.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
@@ -150,7 +151,6 @@ def receiveCamera(payload):
         # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
     else:
         camera_logger.warning("No detected tags")
-        correction_logger.warning("No detected tags")
 
 def connect_sensors():
     subscriber.client = mqtt.Client()

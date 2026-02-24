@@ -3,7 +3,7 @@ import robot.sensors as sensors
 import cv2
 from robot.globals import *
 import time
-from robot.main import *
+import robot.main as main
 
 if __name__ == "__main__":
     print("Connecting to sensors")
@@ -20,10 +20,10 @@ if __name__ == "__main__":
         exit(1)
 
     last_time = time.perf_counter()
-    motion_state = MotionState.FIND_CENTER
+    main.motion_state = MotionState.FIND_CENTER
     try:
         while True:
-            if motion_state == MotionState.IDLE:
+            if main.motion_state == MotionState.IDLE:
                 break
 
             if not sensors.connection_status() or not irc5.connection_status():
@@ -35,7 +35,6 @@ if __name__ == "__main__":
                 continue
 
             if not irc5.robot_pose_buffer:
-                irc5.robot_logger.warning("No robot pose data available yet.")
                 continue
             
             if show:
@@ -45,8 +44,7 @@ if __name__ == "__main__":
                 break
 
             if pencil_buffer and pencil_buffer[-1].active:
-                motion_state = MotionState.FIND_DEPTH
-                controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
+                main.motion_state = MotionState.FIND_DEPTH
                 print("Pencil Detected. Switching to FIND_DEPTH mode.")
                 time.sleep(5)
                 
@@ -61,13 +59,13 @@ if __name__ == "__main__":
 
             last_time = current_time
             irc5.move_robot_frame(dx, dy, dz)
-            state_machine()
+            main.state_machine()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET
 
-            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", motion_state.value, correction.dx, 
+            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", main.motion_state.value, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
     except KeyboardInterrupt:

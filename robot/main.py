@@ -4,6 +4,7 @@ from robot.globals import *
 import time
 import cv2
 
+motion_state = MotionState.IDLE
 def move_xy_sensors():
     global motion_state
     if not sensors.correction_buffer:
@@ -24,7 +25,7 @@ def move_xy_sensors():
     if magnitude > XY_TARGET_ACC: 
         dx = robot_pose[0] + Kp_camera * smooth_dx
         dy = robot_pose[1] - Kp_camera * smooth_dy
-        controller_logger.info("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", smooth_dx, smooth_dy, 
+        controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, smooth_dx, smooth_dy, 
                          camera_curr_correction.dx, camera_curr_correction.dy, robot_pose[0], robot_pose[1], dx, dy)
         # irc5.move_robot_frame(dx, dy, 0) # Larger corrections
     else:
@@ -41,7 +42,7 @@ def move_xyz_sensors():
     dy = Kp_camera * sensors.correction.dy
     dz = -1.0
     
-    controller_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
+    controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, dx, dy, dz)
     # irc5.move_rel_frame(dx, dy, dz)
 
 def find_pencil_depth():
@@ -66,7 +67,7 @@ def find_pencil_depth():
     dz = error * Kp_pencil
     if abs(latest_pencil.distance - dz) < Z_THRESH: # Make sure to never depress too far and break pencil
         # irc5.move_rel_frame(0, 0, dz)
-        controller_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
+        controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
 
 def ascent():
     global motion_state
@@ -77,7 +78,7 @@ def ascent():
         motion_state = MotionState.IDLE
 
     dz = ascent_diff * Kp_ascent
-    controller_logger.info("%.4f, %.4f, %.4f", 0, 0, dz)
+    controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
     # irc5.move_rel_frame(0, 0, dz)
 
 def state_machine():
@@ -105,11 +106,9 @@ def move_xy_target():
     if magnitude > 1.0:
         dx_norm = dx / magnitude
         dy_norm = dy / magnitude
-        irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, 0)
         irc5.move_rel_frame(dx_norm, dy_norm, 0)
     else:
         print(f"Center Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f})")
-        irc5.robot_logger.info("Center Target Reached (%.4f, %.4f)", irc5.robot_state.pos[0], irc5.robot_state.pos[1])
         motion_state = MotionState.DESCEND
         return
 
@@ -127,12 +126,10 @@ def move_xyz_target():
         dz_norm = dz / magnitude
     else:
         print(f"Final Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
-        irc5.robot_logger.info("Final Target Reached: (%.4f, %.4f, %.4f)", irc5.robot_state.pos[0], irc5.robot_state.pos[1], irc5.robot_state.pos[2])
         final_robot_pose = irc5.robot_state.pos.copy()
         motion_state = MotionState.ASCEND
         return
 
-    irc5.robot_logger.info("%.4f, %.4f, %.4f", dx, dy, dz)
     irc5.move_rel_frame(dx_norm, dy_norm, dz_norm)
 
 
@@ -162,11 +159,11 @@ if __name__ == "__main__":
                 break
             
             if not sensors.correction_buffer:
-                correction_logger.warning("No correction data available yet.")
+                controller_logger.warning("No correction data available yet.")
                 continue
 
             if not irc5.robot_pose_buffer:
-                irc5.robot_logger.warning("No robot pose data available yet.")
+                controller_logger.warning("No robot pose data available yet.")
                 continue
             
             if show:

@@ -104,7 +104,6 @@ correction = CorrectionState()
 pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
-motion_state = MotionState.FIND_CENTER
 final_robot_pose = None
 state_last_time = time.perf_counter()
 

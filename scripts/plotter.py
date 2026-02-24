@@ -4,6 +4,7 @@ from collections import deque
 import time
 from robot.globals import *
 from robot.sensors import *
+import robot.main as main
 
 # 1. Configuration
 buffer_size = 100
@@ -52,7 +53,7 @@ def update(frame):
     dy_data.append(correction.dy)
     tz_data.append(pencil.timestamp)
     dz_data.append(pencil.distance)
-    state_data.append(motion_state.value)
+    state_data.append(main.motion_state.value)
 
     # Update line data
     line_dx.set_data(tx_data, dx_data)

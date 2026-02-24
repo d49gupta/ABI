@@ -3,6 +3,7 @@ import numpy as np
 from robot.globals import *
 from dataclasses import replace
 import time
+import robot.main as main
 
 def connect_robot():
     try:
@@ -38,7 +39,7 @@ def read_robot_state():
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
-                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", motion_state.value, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
+                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", main.motion_state.value, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
                                 curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3])
         except socket.timeout:
             robot_logger.warning("Timeout: No data received from robot.")
