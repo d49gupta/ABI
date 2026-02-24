@@ -53,7 +53,7 @@ def find_pencil_depth():
         return
 
     latest_pencil = pencil_buffer[-1]
-    error = latest_pencil.distance - Z_TARGET
+    error = latest_pencil.distance - Z_TARGET_DEPTH
 
     if abs(error) < Z_TARGET_ACC:
         print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
