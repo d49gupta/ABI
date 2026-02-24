@@ -18,7 +18,7 @@ dz_data = deque(maxlen=buffer_size)
 state_data = deque(maxlen=buffer_size)
 
 # 3. Setup Figure
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 5))
 plt.subplots_adjust(hspace=0.4)
 
 # Configure Top Plot
@@ -28,6 +28,7 @@ line_dx, = ax1.plot([], [], label='dx', color='#ff4b4b')
 line_dy, = ax1.plot([], [], label='dy', color='#2ecc71')
 line_dz, = ax1.plot([], [], label='dz', color='#3498db')
 ax1.legend(loc='upper right', ncol=3)
+ax1.set_ylim(-50, 50)
 
 # Configure Bottom Plot
 ax2.set_ylim(0, 6)
@@ -66,9 +67,6 @@ def update(frame):
         latest_now = max(tx_data[-1], tz_data[-1])
         ax1.set_xlim(latest_now - 5, latest_now)
         ax2.set_xlim(latest_now - 5, latest_now)
-        min_val = min(0, min(dx_data[-1], dy_data[-1], dz_data[-1]))
-        max_val = max(0, min(dx_data[-1], dy_data[-1], dz_data[-1]))
-        ax1.set_ylim(min_val, max_val) # change to dynamic scaling
 
     return line_dx, line_dy, line_dz, line_state
 

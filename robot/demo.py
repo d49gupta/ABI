@@ -67,7 +67,7 @@ if __name__ == "__main__":
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET
 
-            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", motion_state, correction.dx, 
+            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", motion_state.value, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
     except KeyboardInterrupt:
