@@ -51,7 +51,7 @@ class RobotConfig:
     ip_address: str = '127.0.0.1'
     port: int = 5000
     socket = None
-    timeout: float = 5.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
+    timeout: float = 10.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
     msg_count: int = 0
     robot_file = None
@@ -104,7 +104,7 @@ correction = CorrectionState()
 pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
-motion_state = MotionState.IDLE
+motion_state = MotionState.FIND_CENTER
 final_robot_pose = None
 state_last_time = time.perf_counter()
 

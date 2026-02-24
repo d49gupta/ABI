@@ -147,7 +147,10 @@ def receiveCamera(payload):
                 cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_dz:.2f} mm", (75, 75),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-    # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
+        # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
+    else:
+        camera_logger.warning("No detected tags")
+        correction_logger.warning("No detected tags")
 
 def connect_sensors():
     subscriber.client = mqtt.Client()

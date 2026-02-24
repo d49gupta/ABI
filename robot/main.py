@@ -19,9 +19,9 @@ def move_xy_sensors():
     if not irc5.robot_pose_buffer:
         controller_logger.warning("Not enough robot pose data for camera smoothing.")
         return
-
+    
+    robot_pose = irc5.robot_pose_buffer[-1].pos
     if magnitude > XY_TARGET_ACC: 
-        robot_pose = irc5.robot_pose_buffer[-1].pos
         dx = robot_pose[0] + Kp_camera * smooth_dx
         dy = robot_pose[1] - Kp_camera * smooth_dy
         controller_logger.info("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", smooth_dx, smooth_dy, 
