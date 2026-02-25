@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from logger import CSVLogger
 
-MQTT_BROKER = "192.168.1.144"
+MQTT_BROKER = "192.168.0.43"
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
@@ -17,7 +17,7 @@ camera_logger = CSVLogger(name="camera", log_dir="../test_logs")
 pencil_logger = CSVLogger(name="pencil", log_dir="../test_logs")
 
 # Mechanically fixed offsets from camera to pencil (cm)
-endpoint_offset_x = -14
+endpoint_offset_x = 0
 endpoint_offset_y = 0
 
 def on_connect(client, userdata, flags, rc):
@@ -131,6 +131,10 @@ def receiveCamera(payload):
         sum_cy += tag["center_y"]
         sum_scale += tag["scale"]
 
+        cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
+        cv2.putText(canvas, f"ID: {tag_id}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+        
     if num_tags > 0:
         avg_cx = int(sum_cx / num_tags)
         avg_cy = int(sum_cy / num_tags)
