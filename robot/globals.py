@@ -49,14 +49,15 @@ class CorrectionState:
 @dataclass
 class RobotConfig:
     ip_address: str = '127.0.0.1'
-    port: int = 5000
+    port: int = 4000
     socket = None
-    timeout: float = 10.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
+    timeout: float = 20.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
     msg_count: int = 0
     robot_file = None
     read_thread = None
     stop_trigger = None
+    last_time = None
 
 @dataclass
 class robotState:
@@ -68,7 +69,8 @@ class robotState:
 # --- GLOBALS ---
 # MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
 SIM_MQTT_BROKER = "127.0.0.1"
-MQTT_BROKER = "192.168.0.43"
+MQTT_BROKER = "10.89.1.194"
+MQTT_ABI_BROKER = "10.89.1.194"
 ROBOT_SIM_IP = "127.0.0.1"
 ROBOT_REAL_IP = "10.60.70.51"
 WINDOW_WIDTH = 640
@@ -85,12 +87,12 @@ Z_ACTIVE = 0.25
 XY_TARGET_ACC = 1.0
 Z_TARGET_ACC = 0.5
 PENCIL_Z_OFFSET = 40 # mm (165)
-ROBOT_PUBLISH_RATE = 0.1 # seconds, should not be faster than camera frequency
+ROBOT_PUBLISH_RATE = 0.3 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
-show = True
+show = False
 show_camera_info = False
 
 # --- BUFFERS ---
@@ -116,13 +118,13 @@ camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
 controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
-subscriber = MQTTState(mqtt_broker=MQTT_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
+subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
+robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
 
 # --- CONTROLLERS ---
-alpha_camera = 0.1
+alpha_camera = 0.5
 smooth_dx = 0.0
 smooth_dy = 0.0
-Kp_camera = 0.1
+Kp_camera = 0.05
 Kp_pencil = 0.1
 Kp_ascent = 0.1

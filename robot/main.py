@@ -22,17 +22,21 @@ def move_xy_sensors():
         return
     
     robot_pose = irc5.robot_pose_buffer[-1].pos
-    if magnitude > XY_TARGET_ACC: 
+    if magnitude > 2.0: 
         dx = robot_pose[0] + Kp_camera * smooth_dx
         dy = robot_pose[1] - Kp_camera * smooth_dy
         controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, smooth_dx, smooth_dy, 
                          camera_curr_correction.dx, camera_curr_correction.dy, robot_pose[0], robot_pose[1], dx, dy)
         # irc5.move_robot_frame(dx, dy, 0) # Larger corrections
+        irc5.move_rel_frame(Kp_camera * smooth_dx, Kp_camera*smooth_dy, 0)
+        print(smooth_dx, smooth_dy)
     else:
         print(f"Camera Correction Target Reached")
         controller_logger.info("Camera Correction Target Reached (%.4f, %.4f)", robot_pose[0], robot_pose[1])
         motion_state = MotionState.DESCEND
-        time.sleep(5)
+        # irc5.stop_robot()
+        # irc5.disconnect_robot()
+        # exit(1)
 
 def move_xyz_sensors():
     # dx and dy magnitude should be less than 1.0
@@ -40,10 +44,9 @@ def move_xyz_sensors():
     # Main loop will trigger pencil interrupt to go into next state
     dx = Kp_camera * sensors.correction.dx
     dy = Kp_camera * sensors.correction.dy
-    dz = -1.0
-    
+    dz = -2
     controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, dx, dy, dz)
-    # irc5.move_rel_frame(dx, dy, dz)
+    irc5.move_rel_frame(dx, dy, dz)
 
 def find_pencil_depth():
     global motion_state, final_robot_pose
@@ -56,21 +59,21 @@ def find_pencil_depth():
     latest_pencil = pencil_buffer[-1]
     error = latest_pencil.distance - Z_TARGET_DEPTH
 
-    if abs(error) < Z_TARGET_ACC:
+    if abs(error) < 0.5:
         print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
         controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
         final_robot_pose = irc5.robot_state.pos.copy()
-        time.sleep(5)
+        #time.sleep(5)
         motion_state = MotionState.ASCEND
-        return
 
     dz = error * Kp_pencil
     if abs(latest_pencil.distance - dz) < Z_THRESH: # Make sure to never depress too far and break pencil
-        # irc5.move_rel_frame(0, 0, dz)
+        irc5.move_rel_frame(0, 0, dz)
         controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
 
 def ascent():
     global motion_state
+    print("IM AM ASCENDING")
     ascent_diff = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
     if abs(ascent_diff) < 5.0:
         print("Ascent Complete")
@@ -79,7 +82,7 @@ def ascent():
 
     dz = ascent_diff * Kp_ascent
     controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
-    # irc5.move_rel_frame(0, 0, dz)
+    irc5.move_rel_frame(0, 0, 2)
 
 def state_machine():
     global state_last_time
@@ -175,14 +178,14 @@ if __name__ == "__main__":
                 break
 
             if pencil_buffer and pencil_buffer[-1].active:
-                if motion_state != MotionState.FIND_DEPTH:
+                if motion_state != MotionState.FIND_DEPTH and motion_state != MotionState.ASCEND:
                     motion_state = MotionState.FIND_DEPTH
                     controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
                     print("Pencil Detected. Switching to FIND_DEPTH mode.")
-                    time.sleep(5)
+                    #time.sleep(5)
 
             state_machine()
-            
+
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:

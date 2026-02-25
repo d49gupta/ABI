@@ -14,6 +14,7 @@ def connect_robot():
         robot_config.robot_file = robot_config.socket.makefile('r')
         robot_config.read_thread = threading.Thread(target=read_robot_state, daemon=True)
         robot_config.stop_trigger = threading.Event()
+        robot_config.last_time = time.perf_counter()
 
     except (socket.timeout, ConnectionRefusedError, OSError) as e:
         print(f"Connection failed: {e}")
@@ -58,6 +59,11 @@ def get_displacement():
     return robot_state.pos - robot_state.initial_pos
 
 def move_rel_frame(dx, dy, dz):
+    current_time = time.perf_counter()
+    if current_time - robot_config.last_time < ROBOT_PUBLISH_RATE:
+        return
+    
+    robot_config.last_time = current_time
     command = f"1, {dx}, {dy}, {dz}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
@@ -83,6 +89,7 @@ if __name__ == "__main__":
 
     try:
         while True:
+            move_rel_frame(10, 0, 0)
             print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
     except KeyboardInterrupt:
         print("Shutting down...")
