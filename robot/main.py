@@ -60,7 +60,7 @@ def find_pencil_depth():
         print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
         controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
         final_robot_pose = irc5.robot_state.pos.copy()
-        time.sleep(5.0)
+        time.sleep(5)
         motion_state = MotionState.ASCEND
         return
 
@@ -146,6 +146,8 @@ if __name__ == "__main__":
         print(sensors.connection_status(), irc5.connection_status())
         print("Failed to connect to sensors or robot.")
         exit(1)
+    else:
+        print("Successful Connections")
 
     last_time = time.perf_counter()
     motion_state = MotionState.FIND_CENTER
@@ -173,10 +175,11 @@ if __name__ == "__main__":
                 break
 
             if pencil_buffer and pencil_buffer[-1].active:
-                motion_state = MotionState.FIND_DEPTH
-                controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
-                print("Pencil Detected. Switching to FIND_DEPTH mode.")
-                time.sleep(5)
+                if motion_state != MotionState.FIND_DEPTH:
+                    motion_state = MotionState.FIND_DEPTH
+                    controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
+                    print("Pencil Detected. Switching to FIND_DEPTH mode.")
+                    time.sleep(5)
 
             state_machine()
             

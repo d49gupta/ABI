@@ -18,6 +18,8 @@ if __name__ == "__main__":
         print(sensors.connection_status(), irc5.connection_status())
         print("Failed to connect to sensors or robot.")
         exit(1)
+    else:
+        print("Successful Connections")
 
     last_time = time.perf_counter()
     main.motion_state = MotionState.FIND_CENTER
@@ -44,9 +46,10 @@ if __name__ == "__main__":
                 break
 
             if pencil_buffer and pencil_buffer[-1].active:
-                main.motion_state = MotionState.FIND_DEPTH
-                print("Pencil Detected. Switching to FIND_DEPTH mode.")
-                time.sleep(5)
+                if main.motion_state != MotionState.FIND_DEPTH:
+                    main.motion_state = MotionState.FIND_DEPTH
+                    print("Pencil Detected. Switching to FIND_DEPTH mode.")
+                    time.sleep(5)
                 
             correction = sensors.correction_buffer[-1]
             dx = X_TARGET + correction.dx
