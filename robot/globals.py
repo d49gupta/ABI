@@ -129,3 +129,7 @@ smooth_dy = 0.0
 Kp_camera = 0.05
 Kp_pencil = 0.1
 Kp_ascent = 0.1
+
+# --- RESULTS ---
+four_point_pos = []
+three_point_pos = []

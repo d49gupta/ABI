@@ -22,12 +22,14 @@ def move_xy_sensors():
     smooth_dy = (alpha_camera * camera_curr_correction.dy) + (1 - alpha_camera) * smooth_dy
     magnitude = (smooth_dx**2 + smooth_dy**2)**0.5
 
-    if magnitude > XY_TARGET_ACC: 
+    if magnitude > XY_TARGET_ACC: # or conveyor is not moving
         controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, smooth_dx, smooth_dy, 0)
         irc5.move_rel_frame(Kp_camera * smooth_dx, Kp_camera*smooth_dy, 0)
     else:
         print(f"Camera Correction Target Reached")
         controller_logger.info("Camera Correction Target Reached")
+        smooth_dx = 0
+        smooth_dy = 0
         motion_state = MotionState.DESCEND
 
 def move_xyz_sensors():
@@ -39,7 +41,7 @@ def move_xyz_sensors():
     irc5.move_rel_frame(dx, dy, dz)
 
 def find_pencil_depth():
-    global motion_state, final_robot_pose
+    global motion_state
 
     if not pencil_buffer:
         controller_logger.warning("No pencil data available for depth finding.")
@@ -52,7 +54,12 @@ def find_pencil_depth():
     if abs(error) < Z_TARGET_ACC:
         print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
         controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
-        final_robot_pose = irc5.robot_state.pos.copy()
+        
+        if robot_pose_buffer:
+            four_point_pos.append(robot_pose_buffer[-1].pos.copy())
+        else:
+            controller_logger.error("Unable to store final robot position")
+
         motion_state = MotionState.ASCEND
 
     dz = error * Kp_pencil
@@ -66,6 +73,7 @@ def ascent():
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
         controller_logger.info("Ascent Complete")
+        time.sleep(3) # give time for conveyor to start moving. make sure to not timeout receive on RAPID side
         motion_state = MotionState.FIND_CENTER
 
     dz = 2.0
@@ -132,6 +140,8 @@ if __name__ == "__main__":
     irc5.connect_robot()
     irc5.start_reading_robot()
     time.sleep(2)
+
+    # TODO: Send command to change speed of arm in move_rel
 
     if not sensors.connection_status() or not irc5.connection_status():
         print(sensors.connection_status(), irc5.connection_status())

@@ -6,6 +6,7 @@ import statistics
 from robot.globals import *
 from dataclasses import replace
 from robot.main import get_motion_state
+import math
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
@@ -119,9 +120,10 @@ def receiveCamera(payload):
         camera_sample.center_y = int(avg_cy)
         camera_sample.timestamp = timestamp
 
-        correction.dz = avg_dz - PENCIL_Z_OFFSET
         correction.dy  = -(avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dx = -(avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
+        correction.dz = avg_dz
+        # correction.dz = math.sqrt(avg_dz ** 2 + correction.dy ** 2 + correction.dx ** 2) # TODO: need to check if this will work
         correction.timestamp = timestamp
 
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
@@ -131,7 +133,7 @@ def receiveCamera(payload):
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
-        camera_buffer.append(curr_camera_sample) # might not need to store any camera samples, just correction values
+        camera_buffer.append(curr_camera_sample)
         correction_buffer.append(curr_correction)
 
         if show:
