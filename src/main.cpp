@@ -50,7 +50,7 @@ int main(int argc, char** argv)
     std::signal(SIGINT, signalHandler);
 
     Publisher publisher;
-    //AprilTagDetector detector(12.5, 6.5, 5.0); // pass in radius of tags
+    // pass in radius of corner tags, center tag, estimated offset in tag radius units
     AprilTagDetector detector(22.5, 11.5, 2.375);	    
     GT2 pencil(30);
 

@@ -61,7 +61,7 @@ if __name__ == "__main__":
                 continue
 
             last_time = current_time
-            # irc5.move_robot_frame(dx, dy, dz)
+            irc5.move_robot_frame(dx, dy, dz)
             main.state_machine()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
