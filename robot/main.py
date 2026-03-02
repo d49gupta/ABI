@@ -5,6 +5,7 @@ import time
 import cv2
 
 motion_state = MotionState.IDLE
+calibration_mode = CalibrationMode.FOUR_POINT
 
 def get_motion_state():
     return motion_state.value
@@ -22,7 +23,7 @@ def move_xy_sensors():
     smooth_dy = (alpha_camera * camera_curr_correction.dy) + (1 - alpha_camera) * smooth_dy
     magnitude = (smooth_dx**2 + smooth_dy**2)**0.5
 
-    if magnitude > XY_TARGET_ACC: # or conveyor is not moving
+    if magnitude > XY_TARGET_ACC: # or conveyor is moving
         controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, smooth_dx, smooth_dy, 0)
         irc5.move_rel_frame(Kp_camera * smooth_dx, Kp_camera*smooth_dy, 0)
     else:
@@ -73,8 +74,13 @@ def ascent():
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
         controller_logger.info("Ascent Complete")
-        time.sleep(3) # give time for conveyor to start moving. make sure to not timeout receive on RAPID side
-        motion_state = MotionState.FIND_CENTER
+
+        if calibration_mode.value == CalibrationMode.FOUR_POINT.value and len(four_point_pos) >= 4:
+            print("Four Point Calibration Complete")
+            motion_state = MotionState.IDLE
+        else:
+            time.sleep(3) # give time for conveyor to start moving. make sure to not timeout receive on RAPID side
+            motion_state = MotionState.FIND_CENTER
 
     dz = 2.0
     controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)

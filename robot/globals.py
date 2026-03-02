@@ -7,6 +7,11 @@ import threading
 import time
 
 # --- ENUMS ---
+
+class CalibrationMode(Enum):
+    FOUR_POINT = 0
+    THREE_POINT = 1
+
 class MotionState(Enum):
     IDLE = 0
     FIND_CENTER = 1
