@@ -7,7 +7,6 @@ import threading
 import time
 
 # --- ENUMS ---
-
 class CalibrationMode(Enum):
     FOUR_POINT = 0
     THREE_POINT = 1
@@ -65,6 +64,11 @@ class RobotConfig:
     last_time = None
 
 @dataclass
+class conveyorState:
+    running = False
+    last_time = None
+
+@dataclass
 class robotState:
     initial_pos : np.ndarray = None
     pos : np.ndarray = None
@@ -95,6 +99,7 @@ ASCENT_HEIGHT_DIFF = 5.0
 PENCIL_Z_OFFSET = 40 # mm (165)
 ROBOT_PUBLISH_RATE = 0.3 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
+CONVEYOR_MOVE_TIME = 2.0
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
@@ -112,6 +117,7 @@ correction = CorrectionState()
 pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
+conveyor_state = conveyorState()
 final_robot_pose = None
 state_last_time = time.perf_counter()
 
@@ -125,7 +131,7 @@ controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
 subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
+robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
 
 # --- CONTROLLERS ---
 alpha_camera = 0.5

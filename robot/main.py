@@ -23,9 +23,17 @@ def move_xy_sensors():
     smooth_dy = (alpha_camera * camera_curr_correction.dy) + (1 - alpha_camera) * smooth_dy
     magnitude = (smooth_dx**2 + smooth_dy**2)**0.5
 
-    if magnitude > XY_TARGET_ACC: # or conveyor is moving
-        controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, smooth_dx, smooth_dy, 0)
-        irc5.move_rel_frame(Kp_camera * smooth_dx, Kp_camera*smooth_dy, 0)
+    if conveyor_state.running and conveyor_state.last_time:
+        curr_time = time.perf_counter()
+        if curr_time - conveyor_state.last_time >= CONVEYOR_MOVE_TIME:
+            irc5.stop_conveyor()
+            conveyor_state.last_time = None        
+
+    if magnitude > XY_TARGET_ACC or conveyor_state.running:
+        dx = Kp_camera * smooth_dx
+        dy = Kp_camera * smooth_dy
+        controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, dx, dy, 0)
+        irc5.move_rel_frame(dx, dy, 0)
     else:
         print(f"Camera Correction Target Reached")
         controller_logger.info("Camera Correction Target Reached")
@@ -58,6 +66,7 @@ def find_pencil_depth():
         
         if robot_pose_buffer:
             four_point_pos.append(robot_pose_buffer[-1].pos.copy())
+            irc5.record_target()
         else:
             controller_logger.error("Unable to store final robot position")
 
@@ -79,7 +88,8 @@ def ascent():
             print("Four Point Calibration Complete")
             motion_state = MotionState.IDLE
         else:
-            time.sleep(3) # give time for conveyor to start moving. make sure to not timeout receive on RAPID side
+            irc5.run_conveyor()
+            conveyor_state.last_time = time.perf_counter()
             motion_state = MotionState.FIND_CENTER
 
     dz = 2.0

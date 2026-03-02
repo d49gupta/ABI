@@ -3,7 +3,6 @@ import numpy as np
 from robot.globals import *
 from dataclasses import replace
 import time
-from robot.main import get_motion_state
 
 def connect_robot():
     try:
@@ -40,7 +39,7 @@ def read_robot_state():
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
-                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", get_motion_state(), curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
+                robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
                                 curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3])
         except socket.timeout:
             robot_logger.warning("Timeout: No data received from robot.")
@@ -79,6 +78,20 @@ def yaw_robot(angle):
     command = f"4,{angle}"
     robot_config.socket.sendall(command.encode('utf-8'))
 
+def run_conveyor():
+    conveyor_state.running = True
+    command = f"5"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
+def stop_conveyor():
+    conveyor_state.running = True = False
+    command = f"6"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
+def record_target():
+    command = f"7"
+    robot_config.socket.sendall(command.encode('utf-8'))
+
 def disconnect_robot():
     robot_config.socket.close()
 
@@ -89,7 +102,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            move_rel_frame(10, 0, 0)
+            # move_rel_frame(10, 0, 0)
             print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
     except KeyboardInterrupt:
         print("Shutting down...")

@@ -6,14 +6,10 @@ MODULE socket_comms
     VAR string pose_msg;
     VAR robtarget target_pose;
     VAR robtarget current_pose;
-    VAR num x_dest;
-    VAR num y_dest;
-    VAR num z_dest;
     VAR bool good_command;
     VAR bool good_data;
     VAR string client_sim_ip := "127.0.0.1";
     VAR string client_real_ip := "10.60.70.51";
-    VAR socketstatus status;
     VAR num yaw_angle;
     VAR intnum comma_index;
     VAR num command_id;
@@ -23,11 +19,19 @@ MODULE socket_comms
     !TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
     TASK PERS tooldata toolBladeTest := [TRUE, [[1.19, 1.1, 334.77], [1, 0, 0, 0]], [0.653, [11.99, -33.41, -0.98], [1, 0, 0, 0], 0, 0, 0]];
     VAR speeddata vSlowYaw := [10, 10, 1000, 1000];
+    VAR num index := 1;
+    PERS robtarget calibration_pose{4} := 
+    [
+    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]],
+    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]],
+    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]],
+    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]]
+    ];
     
     PROC openSocket()
         target_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0); ! Default is tool0      
         SocketCreate server_socket;
-        SocketBind server_socket, client_sim_ip, 5000;
+        SocketBind server_socket, client_sim_ip, 4000;
         SocketListen server_socket;
         SocketAccept server_socket, client_socket;
     ENDPROC
@@ -57,10 +61,7 @@ MODULE socket_comms
             CASE 1:
                 data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
                 good_data := StrToVal(data_str, move_data);
-                
-                IF good_data THEN
-                    MOVE_REL;
-                ENDIF
+                MOVE_REL;
             CASE 2:
                 StopMove;
                 closeSocket;
@@ -68,19 +69,20 @@ MODULE socket_comms
                 data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
                 good_data := StrToVal(data_str, move_data);
                 
-                IF good_data THEN
-                    target_pose.trans.x := move_data.x;
-                    target_pose.trans.y := move_data.y;
-                    target_pose.trans.z := move_data.z;
-                    MOVE_BODY;
-                ENDIF
+                target_pose.trans.x := move_data.x;
+                target_pose.trans.y := move_data.y;
+                target_pose.trans.z := move_data.z;
+                MOVE_BODY;
             CASE 4:
                 data_str := StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index);
                 good_data := StrToVal(data_str, yaw_angle);
-                
-                IF good_data THEN
-                    YAW_TOOL;
-                ENDIF
+                YAW_TOOL;
+            CASE 5:
+                MOVE_CONVEYOR;
+            CASE 6:
+                STOP_CONVEYOR;
+            CASE 7:
+                RECORD_POINT;
             ENDTEST
         ENDIF
     ENDPROC
@@ -107,13 +109,28 @@ MODULE socket_comms
         SocketClose server_socket;
     ENDPROC
     
+    PROC MOVE_CONVEYOR()
+        Set do_CNV_Fwd;
+    ENDPROC
+    
+    PROC STOP_CONVEYOR()
+        Reset do_CNV_Fwd;
+    ENDPROC
+    
+    PROC RECORD_POINT()
+        IF index >= 1 AND index <= 4 THEN
+            calibration_pose{index} := CRobT(\Tool:=tool0 \WObj:=wobj0);
+        ENDIF
+        index := index + 1;
+    ENDPROC
+    
     PROC Calibrate()
-        openSocket; 
+        openSocket;
         
         WHILE TRUE DO
             Send;
             Receive;
-        ENDWHILE
+       ENDWHILE
         
         closeSocket;
     ENDPROC

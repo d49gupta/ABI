@@ -5,7 +5,6 @@ import cv2
 import statistics
 from robot.globals import *
 from dataclasses import replace
-from robot.main import get_motion_state
 import math
 
 # Define offset in mm 
@@ -51,7 +50,7 @@ def receivePencil(payload):
     timestamp = time.perf_counter() - subscriber.start_time
     pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %d, %.4f, %d", get_motion_state(), raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
@@ -128,8 +127,8 @@ def receiveCamera(payload):
 
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
-        camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           get_motion_state(), avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+        camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
+                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
