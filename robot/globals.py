@@ -92,14 +92,14 @@ Y_TARGET = 55.99
 Z_TARGET = -905.67
 Z_THRESH = 8.0
 Z_TARGET_DEPTH = 4.0
-Z_ACTIVE = 0.25
+Z_ACTIVE = 1.0
 XY_TARGET_ACC = 2.0
-Z_TARGET_ACC = 0.5
+Z_TARGET_ACC = 0.2
 ASCENT_HEIGHT_DIFF = 5.0
 PENCIL_Z_OFFSET = 40 # mm (165)
-ROBOT_PUBLISH_RATE = 0.3 # seconds, should not be faster than camera frequency
+ROBOT_PUBLISH_RATE = 0.28 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
-CONVEYOR_MOVE_TIME = 2.0
+CONVEYOR_MOVE_TIME = 1.0
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
@@ -131,7 +131,7 @@ controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
 subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
+robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
 
 # --- CONTROLLERS ---
 alpha_camera = 0.5

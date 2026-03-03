@@ -79,13 +79,11 @@ def yaw_robot(angle):
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def run_conveyor():
-    conveyor_state.running = True
-    command = f"5"
+    command = f"8"
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def stop_conveyor():
-    conveyor_state.running = False
-    command = f"6"
+    command = f"9"
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def record_target():
@@ -102,8 +100,11 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # move_rel_frame(10, 0, 0)
-            print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
+            move_rel_frame(0, -5, 0)
+            # print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
+            # run_conveyor()
+            # time.sleep(5)
+            # stop_conveyor()
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:

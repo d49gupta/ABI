@@ -11,7 +11,7 @@ def get_motion_state():
     return motion_state.value
 
 def move_xy_sensors():
-    global motion_state
+    global motion_state, conveyor_state
 
     if not sensors.correction_buffer:
         controller_logger.warning("Not enough correction data for camera smoothing.")
@@ -24,16 +24,22 @@ def move_xy_sensors():
     magnitude = (smooth_dx**2 + smooth_dy**2)**0.5
 
     if conveyor_state.running and conveyor_state.last_time:
+        irc5.run_conveyor()
         curr_time = time.perf_counter()
         if curr_time - conveyor_state.last_time >= CONVEYOR_MOVE_TIME:
+            print("Stopping the conveyor")    
+            conveyor_state.running = False
+            conveyor_state.last_time = None
+
+    if not conveyor_state.running:
             irc5.stop_conveyor()
-            conveyor_state.last_time = None        
+            # conveyor_state.last_time = None        
 
     if magnitude > XY_TARGET_ACC or conveyor_state.running:
         dx = Kp_camera * smooth_dx
         dy = Kp_camera * smooth_dy
-        controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f", motion_state.value, dx, dy, 0)
-        irc5.move_rel_frame(dx, dy, 0)
+        controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, dx, dy, 0.0)
+        irc5.move_rel_frame(dx, dy, 0.0)
     else:
         print(f"Camera Correction Target Reached")
         controller_logger.info("Camera Correction Target Reached")
@@ -78,7 +84,7 @@ def find_pencil_depth():
         controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
 
 def ascent():
-    global motion_state
+    global motion_state, conveyor_state
     ascent_diff = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
@@ -88,6 +94,8 @@ def ascent():
             print("Four Point Calibration Complete")
             motion_state = MotionState.IDLE
         else:
+            print("Running the Conveyor")
+            conveyor_state.running = True
             irc5.run_conveyor()
             conveyor_state.last_time = time.perf_counter()
             motion_state = MotionState.FIND_CENTER
@@ -191,7 +199,7 @@ if __name__ == "__main__":
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-            if pencil_buffer and pencil_buffer[-1].active:
+            if pencil_buffer and pencil_buffer[-1].active and pencil_buffer[-2].active and pencil_buffer[-3].active:
                 if motion_state.value < MotionState.FIND_DEPTH.value:
                     motion_state = MotionState.FIND_DEPTH
                     controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
