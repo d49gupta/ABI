@@ -84,7 +84,7 @@ def run_conveyor():
     robot_config.socket.sendall(command.encode('utf-8'))
 
 def stop_conveyor():
-    conveyor_state.running = True = False
+    conveyor_state.running = False
     command = f"6"
     robot_config.socket.sendall(command.encode('utf-8'))
 
