@@ -58,6 +58,7 @@ def get_displacement():
     return robot_state.pos - robot_state.initial_pos
 
 def move_rel_frame(dx, dy, dz):
+    global robot_config
     current_time = time.perf_counter()
     if current_time - robot_config.last_time < ROBOT_PUBLISH_RATE:
         return

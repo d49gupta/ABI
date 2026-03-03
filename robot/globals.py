@@ -93,11 +93,11 @@ Z_TARGET = -905.67
 Z_THRESH = 8.0
 Z_TARGET_DEPTH = 4.0
 Z_ACTIVE = 1.0
-XY_TARGET_ACC = 2.0
-Z_TARGET_ACC = 0.2
+XY_TARGET_ACC = 1.0
+Z_TARGET_ACC = 0.1
 ASCENT_HEIGHT_DIFF = 5.0
 PENCIL_Z_OFFSET = 40 # mm (165)
-ROBOT_PUBLISH_RATE = 0.28 # seconds, should not be faster than camera frequency
+ROBOT_PUBLISH_RATE = 0.33 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
 CONVEYOR_MOVE_TIME = 1.0
 
