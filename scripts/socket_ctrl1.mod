@@ -22,16 +22,22 @@ MODULE socket_comms
     VAR num index := 1;
     PERS robtarget calibration_pose{4} := 
     [
-    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]],
-    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]],
-    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]],
-    [[0,0,0],[1,0,0,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]]
+    [[279.488,-19.312,-538.991],[0.000143494,0.965922,0.258832,-0.00011993],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14724.8]],
+    [[301.416,-19.7475,-539.054],[0.000945091,0.96583,0.259157,0.00313846],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14750.8]],
+    [[324.189,-19.8434,-539.222],[0.00163557,0.965729,0.259473,0.00622472],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14776.2]],
+    [[348.793,-20.0385,-539.401],[0.00235769,0.965603,0.259838,0.00950471],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14803.3]]
     ];
     
+    PERS robtarget Point1 := [[279.488,-19.312,-538.991],[0.000143494,0.965922,0.258832,-0.00011993],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14724.8]];
+    PERS robtarget Point2 := [[301.416,-19.7475,-539.054],[0.000945091,0.96583,0.259157,0.00313846],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14750.8]];
+    PERS robtarget Point3 := [[324.189,-19.8434,-539.222],[0.00163557,0.965729,0.259473,0.00622472],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14776.2]];
+    PERS robtarget Point4 := [[348.793,-20.0385,-539.401],[0.00235769,0.965603,0.259838,0.00950471],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14803.3]];
+    
     PROC openSocket()
+        ActUnit CNV1;
         target_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0); ! Default is tool0      
         SocketCreate server_socket;
-        SocketBind server_socket, client_sim_ip, 4000;
+        SocketBind server_socket, client_real_ip, 4000;
         SocketListen server_socket;
         SocketAccept server_socket, client_socket;
     ENDPROC
@@ -65,21 +71,9 @@ MODULE socket_comms
             CASE 2:
                 StopMove;
                 closeSocket;
-            CASE 3:
-                data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
-                good_data := StrToVal(data_str, move_data);
-                
-                target_pose.trans.x := move_data.x;
-                target_pose.trans.y := move_data.y;
-                target_pose.trans.z := move_data.z;
-                MOVE_BODY;
-            CASE 4:
-                data_str := StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index);
-                good_data := StrToVal(data_str, yaw_angle);
-                YAW_TOOL;
-            CASE 5:
+            CASE 8:
                 MOVE_CONVEYOR;
-            CASE 6:
+            CASE 9:
                 STOP_CONVEYOR;
             CASE 7:
                 RECORD_POINT;
@@ -89,19 +83,7 @@ MODULE socket_comms
         
     PROC MOVE_REL()
         MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v5, fine, toolBladeTest;
-    ENDPROC
-    
-    PROC MOVE_WORLD()
-        MOVEJ target_pose, v40, fine, tool0;
-    ENDPROC
-    
-    PROC MOVE_BODY()
-        MoveL target_pose, v50, z1, toolBladeTest;
-    ENDPROC
-    
-    PROC YAW_TOOL()
-        current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
-        MoveL RelTool(current_pose, 0, 0, 0 \Rz:=yaw_angle), vSlowYaw, fine, toolBladeTest; ! positive clockwise
+        !WaitRob\InPos;
     ENDPROC
     
     PROC closeSocket()
@@ -110,11 +92,13 @@ MODULE socket_comms
     ENDPROC
     
     PROC MOVE_CONVEYOR()
+        ErrWRite\I,"Turning On CNV ","Turning On CNV";
         Set do_CNV_Fwd;
     ENDPROC
     
     PROC STOP_CONVEYOR()
-        Reset do_CNV_Fwd;
+        ErrWRite\I,"Turning Off CNV ","Turning Off CNV";
+        reset do_CNV_Fwd;
     ENDPROC
     
     PROC RECORD_POINT()
@@ -125,14 +109,14 @@ MODULE socket_comms
     ENDPROC
     
     PROC Calibrate()
-        openSocket;
+       openSocket;
         
         WHILE TRUE DO
             Send;
             Receive;
        ENDWHILE
         
-        closeSocket;
+        !closeSocket;
     ENDPROC
     
 ENDMODULE

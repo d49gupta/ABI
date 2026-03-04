@@ -34,9 +34,8 @@ public:
     AprilTagDetector(float tag_size_corners, float tag_size_center, float offset) 
     : tag_size_corners(tag_size_corners), tag_size_center(tag_size_center), offset(offset)
     {
-       // tag_offset = offset / (1.0 * tag_size_corners);
         tag_offset = offset;
-	tf = tag36h11_create();
+	    tf = tag36h11_create();
         td = apriltag_detector_create();
         apriltag_detector_add_family(td, tf);
 

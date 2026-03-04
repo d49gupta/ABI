@@ -14,34 +14,34 @@ update_interval = 20
 tx_data = deque(maxlen=buffer_size)
 dx_data = deque(maxlen=buffer_size)
 dy_data = deque(maxlen=buffer_size)
-tz_data = deque(maxlen=buffer_size)
 dz_data = deque(maxlen=buffer_size)
-state_data = deque(maxlen=buffer_size)
+tpencil_data = deque(maxlen=buffer_size)
+pencil_data = deque(maxlen=buffer_size)
 
 # 3. Setup Figure
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 5))
 plt.subplots_adjust(hspace=0.4)
 
 # Configure Top Plot
-ax1.set_title("Sensor Readings")
+ax1.set_title("Camera State")
 ax1.grid(True, alpha=0.3)
 line_dx, = ax1.plot([], [], label='dx', color='#ff4b4b')
 line_dy, = ax1.plot([], [], label='dy', color='#2ecc71')
-line_dz, = ax1.plot([], [], label='dz', color='#3498db')
+line_dz, = ax1.plot([], [], label='dy', color="#291fbd")
 ax1.legend(loc='upper right', ncol=3)
-ax1.set_ylim(-50, 50)
+ax1.set_ylim(-100, 100)
 
 # Configure Bottom Plot
-ax2.set_ylim(0, 6)
-ax2.set_title("Robot State")
+ax2.set_ylim(-1, 8)
+ax2.set_title("Pencil State")
 ax2.grid(True, alpha=0.3)
-line_state, = ax2.plot([], [], label='state', color='#9b59b6', lw=2)
+line_pencil, = ax2.plot([], [], label='pencil depth', color='#3498db')
 ax2.legend(loc='upper right')
 
 def update(frame):
     if not correction_buffer or not pencil_buffer:
         print("No available data to plot")
-        return line_dx, line_dy, line_dz, line_state
+        return line_dx, line_dy, line_dz, line_pencil
     
     # Get latest data points
     correction = correction_buffer[-1]
@@ -51,25 +51,23 @@ def update(frame):
     tx_data.append(correction.timestamp)
     dx_data.append(correction.dx)
     dy_data.append(correction.dy)
-    tz_data.append(pencil.timestamp)
-    dz_data.append(pencil.distance)
-    state_data.append(main.motion_state.value)
+    dz_data.append(correction.dz)
+    tpencil_data.append(pencil.timestamp)
+    pencil_data.append(pencil.distance)
 
     # Update line data
     line_dx.set_data(tx_data, dx_data)
     line_dy.set_data(tx_data, dy_data)
-    line_dz.set_data(tz_data, dz_data)
-    
-    # For line_state, we use tx_data as the time reference
-    line_state.set_data(tx_data, list(state_data))
-    
+    line_dz.set_data(tx_data, dz_data)
+    line_pencil.set_data(tpencil_data, pencil_data)
+
     # 4. Handle Sliding Window (show last 5 seconds)
-    if tx_data and tz_data:
-        latest_now = max(tx_data[-1], tz_data[-1])
+    if tx_data and tpencil_data:
+        latest_now = max(tx_data[-1], tpencil_data[-1])
         ax1.set_xlim(latest_now - 5, latest_now)
         ax2.set_xlim(latest_now - 5, latest_now)
 
-    return line_dx, line_dy, line_dz, line_state
+    return line_dx, line_dy, line_dz, line_pencil
 
 if __name__ == "__main__":
     connect_sensors()

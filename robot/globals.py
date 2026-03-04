@@ -7,6 +7,10 @@ import threading
 import time
 
 # --- ENUMS ---
+class CalibrationMode(Enum):
+    FOUR_POINT = 0
+    THREE_POINT = 1
+
 class MotionState(Enum):
     IDLE = 0
     FIND_CENTER = 1
@@ -60,6 +64,11 @@ class RobotConfig:
     last_time = None
 
 @dataclass
+class conveyorState:
+    running = False
+    last_time = None
+
+@dataclass
 class robotState:
     initial_pos : np.ndarray = None
     pos : np.ndarray = None
@@ -83,12 +92,14 @@ Y_TARGET = 55.99
 Z_TARGET = -905.67
 Z_THRESH = 8.0
 Z_TARGET_DEPTH = 4.0
-Z_ACTIVE = 0.25
+Z_ACTIVE = 1.0
 XY_TARGET_ACC = 1.0
-Z_TARGET_ACC = 0.5
+Z_TARGET_ACC = 0.1
+ASCENT_HEIGHT_DIFF = 5.0
 PENCIL_Z_OFFSET = 40 # mm (165)
-ROBOT_PUBLISH_RATE = 0.3 # seconds, should not be faster than camera frequency
+ROBOT_PUBLISH_RATE = 0.33 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
+CONVEYOR_MOVE_TIME = 1.0
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
@@ -106,6 +117,7 @@ correction = CorrectionState()
 pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
+conveyor_state = conveyorState()
 final_robot_pose = None
 state_last_time = time.perf_counter()
 
@@ -128,3 +140,7 @@ smooth_dy = 0.0
 Kp_camera = 0.05
 Kp_pencil = 0.1
 Kp_ascent = 0.1
+
+# --- RESULTS ---
+four_point_pos = []
+three_point_pos = []

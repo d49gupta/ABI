@@ -5,7 +5,7 @@ import cv2
 import statistics
 from robot.globals import *
 from dataclasses import replace
-import robot.main as main
+import math
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
@@ -50,7 +50,7 @@ def receivePencil(payload):
     timestamp = time.perf_counter() - subscriber.start_time
     pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %d, %.4f, %d", main.motion_state.value, raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
@@ -119,19 +119,20 @@ def receiveCamera(payload):
         camera_sample.center_y = int(avg_cy)
         camera_sample.timestamp = timestamp
 
-        correction.dz = avg_dz - PENCIL_Z_OFFSET
         correction.dy  = -(avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dx = -(avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
+        correction.dz = avg_dz
+        # correction.dz = math.sqrt(avg_dz ** 2 + correction.dy ** 2 + correction.dx ** 2) # TODO: need to check if this will work
         correction.timestamp = timestamp
 
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
-        camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           main.motion_state.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+        camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
+                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
-        camera_buffer.append(curr_camera_sample) # might not need to store any camera samples, just correction values
+        camera_buffer.append(curr_camera_sample)
         correction_buffer.append(curr_correction)
 
         if show:
