@@ -18,7 +18,7 @@ MODULE socket_comms
     VAR pos move_data;
     !TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
     TASK PERS tooldata toolBladeTest := [TRUE, [[1.19, 1.1, 334.77], [1, 0, 0, 0]], [0.653, [11.99, -33.41, -0.98], [1, 0, 0, 0], 0, 0, 0]];
-    VAR speeddata vSlowYaw := [10, 10, 1000, 1000];
+    VAR speeddata speed_var := [5, 10, 1000, 1000];
     VAR num index := 1;
     PERS robtarget calibration_pose{4} := 
     [
@@ -82,7 +82,7 @@ MODULE socket_comms
     ENDPROC
         
     PROC MOVE_REL()
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v5, fine, toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, fine, toolBladeTest;
         !WaitRob\InPos;
     ENDPROC
     
@@ -93,11 +93,13 @@ MODULE socket_comms
     
     PROC MOVE_CONVEYOR()
         ErrWRite\I,"Turning On CNV ","Turning On CNV";
+        speed_var := [10, 50, 5000, 1000];
         Set do_CNV_Fwd;
     ENDPROC
     
     PROC STOP_CONVEYOR()
         ErrWRite\I,"Turning Off CNV ","Turning Off CNV";
+        speed_var := [5, 50, 5000, 1000];
         reset do_CNV_Fwd;
     ENDPROC
     
