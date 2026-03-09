@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 from logger import CSVLogger
 
-MQTT_BROKER = "192.168.0.43"
-# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+# MQTT_BROKER = "192.168.0.43"
+MQTT_BROKER = "172.20.10.5"
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
