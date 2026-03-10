@@ -1,5 +1,6 @@
 #include "mqtt.hpp"
 
+// Inits MQTT library and creates a new client instance connecting with a local broker
 Publisher::Publisher()
 {
     mosquitto_lib_init();
@@ -19,6 +20,7 @@ Publisher::Publisher()
     std::cout << "Connected! Ready to publish messages..." << std::endl;
 }
 
+// Publishes a string payload to a given MQTT topic with no retention
 bool Publisher::sendMessage(const std::string& topic, const std::string& message)
 {
     rc = mosquitto_publish(mosq, NULL, topic.c_str(), message.length(), message.c_str(), 0, false);

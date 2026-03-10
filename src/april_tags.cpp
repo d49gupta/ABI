@@ -1,5 +1,8 @@
 #include "april_tags.hpp"
 
+// Main detection entry point
+// Passes raw greyscale frame to the AprilTag libray, then iterates over every detection.
+// For each tag detected_tags[i] = [tagID, px centroid, projected center point, pixel-to-mm scaling factor, estimated Z depth]
 bool AprilTagDetector::detectTags(image_u8_t* img) 
 {
     zarray_t* detections = apriltag_detector_detect(this->td, img);
@@ -34,6 +37,8 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     return this->num_tags > 0;
 }
 
+// Takes tag's homography matrix and projexcts a point at a known physical offset in tag-local coords into px space
+// Use it to find an approximate of the physical center of the calibration target
 Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, double offset_x, double offset_y) 
 {
     double* h = det->H->data;
@@ -75,11 +80,14 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     return pixel;
 }
 
+// Getter returning number of tags deteceted in last frame
 size_t AprilTagDetector::detectionCount() 
 {
     return num_tags;
 }
 
+// Serialize all detected tags into a JSON string containing the count and an array of tag objects 
+// to publish to camera/detections MQTT topic
 std::string AprilTagDetector::JSONOutput()
 {
     std::stringstream ss;

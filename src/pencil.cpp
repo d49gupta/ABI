@@ -1,5 +1,6 @@
 #include "pencil.hpp"
 
+// Opoens I2C bus and configs the ADC chip
 GT2::GT2(int size) : cache(size)
 {
     this->adc = openI2C();
@@ -15,11 +16,13 @@ GT2::GT2(int size) : cache(size)
     // std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
+// Closes I2C file descriptor
 GT2::~GT2()
 {
     close(this->adc);
 }
 
+// Sts I2C slave address and returns file descriptor
 int GT2::openI2C()
 {
     int file = open("/dev/i2c-1", O_RDWR);
@@ -36,6 +39,8 @@ int GT2::openI2C()
     return file;
 }
 
+// Reads 2 bytes from ADC, reconstructs signed 16-bit int, converts to mm, 
+// sets a contact flag if distance exceeds z-threshold
 void GT2::readRaw()
 {
     PencilReading reading;
@@ -56,29 +61,35 @@ void GT2::readRaw()
     this->cache.enqueue(reading);
 }
 
+// converts raw ADC bits to millivolts
 int GT2::convertToMillivolts(int bits)
 {
     double voltage = (bits * this->FSR) / 32768.0;
     return static_cast<int>(voltage * 1000);
 }
 
+// converts raw ADC bits to milliamps
 int GT2::convertToMilliamps(int bits)
 {
     double current = ((bits) / 32767.0) * (this->max_ma - this->min_ma) + this->min_ma;
     return static_cast<int>(current);
 }
 
+// Linear interpolation mapping ADC bits to physical displacements
 double GT2::convertToMillimeters(int bits)
 {
     double distance = (double)(bits - MIN_BIT) * (MAX_DIST - MIN_DIST) / (MAX_BIT - MIN_BIT);    
     return distance;
 }
 
+// Returns most recent PencilReading from cache
 PencilReading GT2::getLatestReading()
 {
     return this->cache.newestValue();
 }
 
+// Serialize the latest reading into JSON string with raw displacement (mm), and flag fields.
+// return is what is published to pecil/reading MQTT topic
 std::string GT2::JSONOutput()
 {
     std::stringstream ss;
