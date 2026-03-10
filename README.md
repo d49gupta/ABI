@@ -13,7 +13,7 @@ This project runs on a Raspberry Pi 5 mounted to a custom end-effector attached 
 │   ├── mqtt.cpp / mqtt.hpp
 │   └── pencil.cpp / pencil.hpp
 │
-└── Python (Runs on Host Machine or Pi)
+└── Python (Runs on Host Machine)
     ├── visualize.py          # MQTT subscriber + live AprilTag canvas
     ├── calibration.py        # Camera intrinsic calibration via chessboard
     ├── egm_test.py           # EGM UDP loop — sends real-time Z corrections to ABB
