@@ -2,6 +2,15 @@ import logging
 import os
 
 class CSVLogger:
+    """
+    A CSV-formatted logging utility wrapping Python's standard logging module.
+
+    Each log record includes a wall-clock timestamp, milliseconds since
+    program start, source module and line number, log level, a sequential
+    message counter, and the message body. Output is written to a file
+    in the specified log directory.
+    """
+
     class CounterFilter(logging.Filter):
         """Internal class to inject the counter into each log record."""
         def __init__(self, parent):
@@ -13,6 +22,15 @@ class CSVLogger:
             return True
 
     def __init__(self, name="logger", log_dir="logs", level=logging.INFO):
+        """
+        Initialises the logger, creates the log directory if needed, writes
+        the CSV header row, and attaches the counter filter and file handler.
+
+        Args:
+            name (str): Logger name and output filename prefix.
+            log_dir (str): Directory where the CSV log file will be written.
+            level (int): Logging level threshold (default logging.INFO).
+        """
         os.makedirs(log_dir, exist_ok=True)
         self.log_path = os.path.join(log_dir, f"{name}_logs.csv")
         self.counter = 0
@@ -42,17 +60,21 @@ class CSVLogger:
             f.write("timestamp,ms_since_start,module,line,level,msg_count,message\n")
 
     def info(self, msg, *args, **kwargs):
+        """Logs a message at INFO level and increments the message counter."""
         self.counter += 1
         self.logger.info(msg, *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
+        """Logs a message at WARNING level and increments the message counter."""
         self.counter += 1
         self.logger.warning(msg, *args, **kwargs)
 
     def error(self, msg, *args, **kwargs):
+        """Logs a message at ERROR level and increments the message counter."""
         self.counter += 1
         self.logger.error(msg, *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
+        """Logs a message at DEBUG level and increments the message counter."""
         self.counter += 1
         self.logger.debug(msg, *args, **kwargs)
