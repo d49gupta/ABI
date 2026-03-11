@@ -128,6 +128,7 @@ def receiveCamera(payload):
     avg_cy = 0
 
     # Draw all tags on canvas
+     # Draw all tags on canvas
     for tag in tags:
         x = int(tag["x"])
         y = int(tag["y"])
@@ -135,15 +136,17 @@ def receiveCamera(payload):
         cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
         cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
-
-    # Use all tags in the 4-point topic for center estimation (IDs 0-4)
-    for tag in tags:
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
         sum_scale += tag["scale"]
         cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
         cv2.putText(canvas, f"ID: {tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+
+    if num_tags > 0:
+        avg_cx = int(sum_cx / num_tags)
+        avg_cy = int(sum_cy / num_tags)
+        avg_scale = sum_scale / num_tags
 
     if num_tags > 0:
         avg_cx = int(sum_cx / num_tags)
