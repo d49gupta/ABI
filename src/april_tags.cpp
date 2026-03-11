@@ -91,6 +91,13 @@ size_t AprilTagDetector::detectionCount()
 std::string AprilTagDetector::JSONOutput()
 {
     std::stringstream ss;
+
+    // filter out the 3-point calibration tags
+    std::vector<AprilTag> tags_4pt;
+    for (const auto& tag : detected_tags)
+        if (tag.id != 5 && tag.id != 6)
+            tags_4pt.push_back(tag);
+
     ss << "{ \"count\": " << detected_tags.size() << ", \"tags\": [";
 
     for (size_t i = 0; i < detected_tags.size(); i++) {
@@ -106,6 +113,33 @@ std::string AprilTagDetector::JSONOutput()
         if (i < detected_tags.size() - 1) ss << ",";
     }
 
+    ss << "]}";
+    return ss.str();
+}
+
+// Serialize all detected tags into a JSON string containing the count and an array of tag objects 
+// to publish to camera/detections MQTT topic for 3-point calibration
+std::string AprilTagDetector::JSONOutput3pt()
+{
+    std::stringstream ss;
+    // filter out the 4-point calibration tags
+    std::vector<AprilTag> tags_3pt;
+    for (const auto& tag : detected_tags)
+        if (tag.id == 4 || tag.id == 5 || tag.id == 6)
+            tags_3pt.push_back(tag);
+
+    ss << "{ \"count\": " << tags_3pt.size() << ", \"tags\": [";
+    for (size_t i = 0; i < tags_3pt.size(); i++) {
+        ss << "{"
+           << "\"id\":"       << tags_3pt[i].id << ","
+           << "\"x\":"        << tags_3pt[i].x  << ","
+           << "\"y\":"        << tags_3pt[i].y  << ","
+           << "\"center_x\":" << tags_3pt[i].center_x << ","
+           << "\"center_y\":" << tags_3pt[i].center_y << ","
+           << "\"scale\":"    << tags_3pt[i].scale << ","
+           << "\"est_z\":"    << tags_3pt[i].est_z << "}";
+        if (i < tags_3pt.size() - 1) ss << ",";
+    }
     ss << "]}";
     return ss.str();
 }

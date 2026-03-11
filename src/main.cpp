@@ -40,7 +40,9 @@ void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* bu
         image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
         detector.detectTags(&img);
         std::string jsonOutput = detector.JSONOutput();
+        std::string jsonOutput3pt = detector.JSONOutput3pt();
         publisher.sendMessage("camera/detections", jsonOutput);
+        publisher.sendMessage("camera/3pt_calibration", jsonOutput3pt);
         std::cin.ignore(size / 2); 
     }
 
@@ -57,7 +59,8 @@ int main(int argc, char** argv)
 
     Publisher publisher;
     // pass in radius of corner tags, center tag, estimated offset in tag radius units
-    AprilTagDetector detector(22.5, 11.5, 2.375);	    
+    // float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset
+    AprilTagDetector detector(22.5, 11.5, 17, 2.375, 6.7);	    
     GT2 pencil(30);
 
     int width = 640;

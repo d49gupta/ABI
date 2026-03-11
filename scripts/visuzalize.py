@@ -10,6 +10,7 @@ MQTT_BROKER = "10.0.0.175" # Evan Home Wifi
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/detections"
 PENCIL_TOPIC = "pencil/reading"
+THREE_PT_TOPIC = "camera/3pt_calibration"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 
@@ -23,8 +24,8 @@ endpoint_offset_y = 0
 
 def on_connect(client, userdata, flags, rc):
     """
-    When connected to the board setup subscribers to the camera module and 
-    the digital pressure sensor.
+    When connected to the board setup subscribers to the camera module,
+    the digital pressure sensor, and the 3-point calibration topic.
 
     Args:
         client: The client instance for this runtime
@@ -34,28 +35,29 @@ def on_connect(client, userdata, flags, rc):
 
     Returns:
         N/A
-    
+
     Raises:
         N/A
     """
     print(f"Connected to Pi with result code {rc}")
     client.subscribe(CAMERA_TOPIC)
     client.subscribe(PENCIL_TOPIC)
+    client.subscribe(THREE_PT_TOPIC)
 
 def on_message(client, userdata, msg):
     """
-    Callback triggered when a message is received from the MQTT broker. 
+    Callback triggered when a message is received from the MQTT broker.
     Routes the payload to specific processing functions based on the topic.
 
     Args:
         client: The client instance for this callback.
         userdata: The private user data as set in Client() or user_data_set().
-        msg: An instance of MQTTMessage. This is a class with members topic, 
+        msg: An instance of MQTTMessage. This is a class with members topic,
              payload, qos, retain.
 
     Returns:
         N/A
-    
+
     Raises:
         Exception: Logged to console if message decoding or routing fails.
     """
@@ -65,13 +67,15 @@ def on_message(client, userdata, msg):
             receivePencil(payload)
         elif msg.topic == CAMERA_TOPIC:
             receiveCamera(payload)
+        elif msg.topic == THREE_PT_TOPIC:
+            receive3ptCalibration(payload)
 
     except Exception as e:
-            print(f"Error processing message on {msg.topic}: {e}")
+        print(f"Error processing message on {msg.topic}: {e}")
 
 def receivePencil(payload):
     """
-    Parses digital pressure sensor data, logs the raw and physical values to 
+    Parses digital pressure sensor data, logs the raw and physical values to
     a CSV file, and prints status to the console.
 
     Args:
@@ -79,7 +83,7 @@ def receivePencil(payload):
 
     Returns:
         N/A
-    
+
     Raises:
         JSONDecodeError: If the payload is not a valid JSON string.
         KeyError: If expected keys are missing from the payload.
@@ -94,79 +98,67 @@ def receivePencil(payload):
 # TODO: Overlay this with a live compressed video feed
 def receiveCamera(payload):
     """
-    Processes AprilTag detection data to update the global canvas. Draws 
-    individual tag positions and calculates/visualizes the average center point.
+    Processes 4-point AprilTag detection data (IDs 0-4) to update the global
+    canvas. Draws individual tag positions and calculates/visualizes the
+    average center point. Tags 5 and 6 are excluded and handled separately
+    via receive3ptCalibration().
 
     Args:
-        payload: A JSON string containing a list of "tags", each with x, y, 
+        payload: A JSON string containing a list of "tags", each with x, y,
                  id, center_x, and center_y.
 
     Returns:
         N/A
-    
+
     Raises:
         JSONDecodeError: If the payload is not a valid JSON string.
         ZeroDivisionError: Handled internally if no tags are detected.
     """
     global canvas
     data = json.loads(payload)
-    canvas.fill(0) 
+    canvas.fill(0)
 
     tags = data.get("tags", [])
-
-    # split tags by role
-    calibration_tags = [t for t in tags if t["id"] in (0,1,2,3,4)]
-    side_tags = [t for t in tags if t["id"] in (5,6)]
     num_tags = len(tags)
 
     sum_cx = 0
     sum_cy = 0
     sum_scale = 0
-
     avg_cx = 0
     avg_cy = 0
 
-    # Draw all tags on cavas
+    # Draw all tags on canvas
     for tag in tags:
         x = int(tag["x"])
         y = int(tag["y"])
         tag_id = tag["id"]
-
         cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
         cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
-        
-    # Only use 4-point tags for center estimation
-    for tag in calibration_tags:
+
+    # Use all tags in the 4-point topic for center estimation (IDs 0-4)
+    for tag in tags:
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
         sum_scale += tag["scale"]
-
         cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
-        cv2.putText(canvas, f"ID: {tag["id"]}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
+        cv2.putText(canvas, f"ID: {tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
-        
-    # Draw 3-point tags in different color
-    for tag in side_tags:
-        cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (255, 165, 0), -1)
-        cv2.putText(canvas, f"3PT ID:{tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 165, 0), 1)
-    
-    num_calibration_tags = len(calibration_tags)
-    if num_calibration_tags > 0:
-        avg_cx = int(sum_cx / num_calibration_tags)
-        avg_cy = int(sum_cy / num_calibration_tags)
-        avg_scale = sum_scale / num_calibration_tags
 
-        projected_x = int(int(WINDOW_WIDTH / 2) + endpoint_offset_x / avg_scale)
-        projected_y = int(int(WINDOW_HEIGHT / 2) + endpoint_offset_y / avg_scale) # make sure camera and body directions are consistent
+    if num_tags > 0:
+        avg_cx = int(sum_cx / num_tags)
+        avg_cy = int(sum_cy / num_tags)
+        avg_scale = sum_scale / num_tags
 
-        # Plotting the relation between the camera and the predicted center 
+        projected_x = int(WINDOW_WIDTH / 2 + endpoint_offset_x / avg_scale)
+        projected_y = int(WINDOW_HEIGHT / 2 + endpoint_offset_y / avg_scale)
+
+        # Plot the relation between the camera and the predicted center
         cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
         cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
-        
-        # Putting the target circle on the canvas and logging the predicted point on the image in px
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+
+        # Draw target center circle and log
         cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
         inv_scale = 1 / avg_scale
@@ -174,7 +166,49 @@ def receiveCamera(payload):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         camera_logger.info("%.3f, %.3f", avg_cx, avg_cy)
 
-    print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
+    print(f"Received {num_tags} tags. Center: ({avg_cx}, {avg_cy})")
+
+def receive3ptCalibration(payload):
+    """
+    Receives 3-point calibration tag data (IDs 4, 5, 6) from the
+    camera/3pt_calibration MQTT topic. Tag 4 is the reference center point,
+    tags 5 and 6 are the calibration targets. Draws the tags on the canvas
+    in orange and logs center positions to the console.
+
+    Args:
+        payload: A JSON string containing a list of "tags" with id, center_x,
+                 center_y, scale, and est_z fields.
+
+    Returns:
+        N/A
+
+    Raises:
+        JSONDecodeError: If the payload is not a valid JSON string.
+        KeyError: If expected keys are missing from the payload.
+    """
+    data = json.loads(payload)
+    tags = data.get("tags", [])
+
+    ref  = next((t for t in tags if t["id"] == 4), None)
+    tag5 = next((t for t in tags if t["id"] == 5), None)
+    tag6 = next((t for t in tags if t["id"] == 6), None)
+
+    # Draw reference tag (ID 4) in yellow
+    if ref:
+        cx, cy = int(ref["center_x"]), int(ref["center_y"])
+        cv2.circle(canvas, (cx, cy), 6, (0, 255, 255), -1)
+        cv2.putText(canvas, "REF ID:4", (cx + 10, cy - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 255), 1)
+        print(f"REF  (ID 4): center=({ref['center_x']:.1f}, {ref['center_y']:.1f})  scale={ref['scale']:.4f}")
+
+    # Draw 3-point target tags (IDs 5 and 6) in orange
+    for tag in [tag5, tag6]:
+        if tag:
+            cx, cy = int(tag["center_x"]), int(tag["center_y"])
+            cv2.circle(canvas, (cx, cy), 6, (0, 165, 255), -1)
+            cv2.putText(canvas, f"3PT ID:{tag['id']}", (cx + 10, cy - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 165, 255), 1)
+            print(f"3PT  (ID {tag['id']}): center=({tag['center_x']:.1f}, {tag['center_y']:.1f})  scale={tag['scale']:.4f}")
 
 if __name__ == "__main__":
     client = mqtt.Client()

@@ -31,10 +31,11 @@ struct Point2D
 class AprilTagDetector 
 {
 public:
-    AprilTagDetector(float tag_size_corners, float tag_size_center, float offset) 
-    : tag_size_corners(tag_size_corners), tag_size_center(tag_size_center), offset(offset)
+    AprilTagDetector(float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset) 
+    : tag_size_corners(tag_size_corners), tag_size_center(tag_size_center), tag_size_side(tag_size_side), offset(offset), side_offset(side_offset)
     {
         tag_offset = offset;
+        // side_tag_offset = side_offset; // Offsets of tags for 3-point calibration
 	    tf = tag36h11_create();
         td = apriltag_detector_create();
         apriltag_detector_add_family(td, tf);
@@ -44,12 +45,17 @@ public:
         tag_positions[2] = {tag_offset,  tag_offset};
         tag_positions[3] = {-tag_offset,  tag_offset};
 	    tag_positions[4] = {0, 0};
+        tag_positions[5] = {0, -side_offset};
+        tag_positions[6] = {side_offset, 0};
 
         tag_sizes[0] = tag_size_corners;
         tag_sizes[1] = tag_size_corners;
         tag_sizes[2] = tag_size_corners;
         tag_sizes[3] = tag_size_corners;
         tag_sizes[4] = tag_size_center;
+
+        tag_sizes[5] = tag_size_side;
+        tag_sizes[6] = tag_size_side;
     }
 
     ~AprilTagDetector() 
@@ -61,6 +67,7 @@ public:
     bool detectTags(image_u8_t* img);
     size_t detectionCount();
     std::string JSONOutput();
+    std::string JSONOutput3pt();
     Point2D project_relative_point(apriltag_detection_t *det, double offset_x, double offset_y);
 
     size_t num_tags;
@@ -69,9 +76,11 @@ public:
 private:
     apriltag_family_t *tf;
     apriltag_detector_t *td;
-    float tag_size_corners; // in cm
-    float tag_size_center; // in cm
-    float offset; // in terms of tag_size_corners
+    float tag_size_corners; // in mm
+    float tag_size_center; // in mm
+    float tag_size_side; // in mm
+    float offset; // in terms of tag_size_corners (cm)
+    float side_offset; // cm
     float tag_offset;
     std::unordered_map<int, Point2D> tag_positions;
     std::unordered_map<int, float> tag_sizes;
