@@ -100,8 +100,8 @@ def receiveCamera(payload):
     """
     Processes 4-point AprilTag detection data (IDs 0-4) to update the global
     canvas. Draws individual tag positions and calculates/visualizes the
-    average center point. Tags 5 and 6 are excluded and handled separately
-    via receive3ptCalibration().
+    average center point. Tags 5 and 6 are excluded on the C++ side and
+    handled separately via receive3ptCalibration().
 
     Args:
         payload: A JSON string containing a list of "tags", each with x, y,
@@ -127,26 +127,27 @@ def receiveCamera(payload):
     avg_cx = 0
     avg_cy = 0
 
-    # Draw all tags on canvas
-     # Draw all tags on canvas
     for tag in tags:
         x = int(tag["x"])
         y = int(tag["y"])
         tag_id = tag["id"]
+
+        # Debug: print raw vs projected center per tag
+        print(f"ID:{tag_id} x:{tag['x']:.1f} y:{tag['y']:.1f} cx:{tag['center_x']:.1f} cy:{tag['center_y']:.1f}")
+
+        # Draw raw tag centroid
         cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
         cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
+
+        # Draw projected center point
+        cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
+        cv2.putText(canvas, f"ID: {tag_id}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+
         sum_cx += tag["center_x"]
         sum_cy += tag["center_y"]
         sum_scale += tag["scale"]
-        cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
-        cv2.putText(canvas, f"ID: {tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
-
-    if num_tags > 0:
-        avg_cx = int(sum_cx / num_tags)
-        avg_cy = int(sum_cy / num_tags)
-        avg_scale = sum_scale / num_tags
 
     if num_tags > 0:
         avg_cx = int(sum_cx / num_tags)
@@ -176,7 +177,7 @@ def receive3ptCalibration(payload):
     Receives 3-point calibration tag data (IDs 4, 5, 6) from the
     camera/3pt_calibration MQTT topic. Tag 4 is the reference center point,
     tags 5 and 6 are the calibration targets. Draws the tags on the canvas
-    in orange and logs center positions to the console.
+    and logs center positions to the console.
 
     Args:
         payload: A JSON string containing a list of "tags" with id, center_x,
