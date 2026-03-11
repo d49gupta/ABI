@@ -133,7 +133,7 @@ def receiveCamera(payload):
         tag_id = tag["id"]
 
         # Debug: print raw vs projected center per tag
-        print(f"ID:{tag_id} x:{tag['x']:.1f} y:{tag['y']:.1f} cx:{tag['center_x']:.1f} cy:{tag['center_y']:.1f}")
+        # print(f"ID:{tag_id} x:{tag['x']:.1f} y:{tag['y']:.1f} cx:{tag['center_x']:.1f} cy:{tag['center_y']:.1f}")
 
         # Draw raw tag centroid
         cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
