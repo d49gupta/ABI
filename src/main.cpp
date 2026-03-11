@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     Publisher publisher;
     // pass in radius of corner tags, center tag, estimated offset in tag radius units
     // float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset
-    AprilTagDetector detector(22.5, 11.5, 17, 2.375, 6.7);	    
+    AprilTagDetector detector(22.5, 11.5, 17, 2.375, 6.115);	    
     GT2 pencil(30);
 
     int width = 640;
