@@ -149,8 +149,8 @@ def receiveCamera(payload):
     # Draw 3-point tags in different color
     for tag in side_tags:
         cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (255, 165, 0), -1)
-        # cv2.putText(canvas, f"3PT ID:{tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
-        #         cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 165, 0), 1)
+        cv2.putText(canvas, f"3PT ID:{tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 165, 0), 1)
     
     num_calibration_tags = len(calibration_tags)
     if num_calibration_tags > 0:
