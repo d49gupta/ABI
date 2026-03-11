@@ -98,19 +98,19 @@ std::string AprilTagDetector::JSONOutput()
         if (tag.id != 5 && tag.id != 6)
             tags_4pt.push_back(tag);
 
-    ss << "{ \"count\": " << detected_tags.size() << ", \"tags\": [";
+    ss << "{ \"count\": " << tags_4pt.size() << ", \"tags\": [";
 
-    for (size_t i = 0; i < detected_tags.size(); i++) {
+    for (size_t i = 0; i < tags_4pt.size(); i++) {
         ss << "{"
-        << "\"id\":"       << detected_tags[i].id << ","
-        << "\"x\":"        << detected_tags[i].x  << ","
-        << "\"y\":"        << detected_tags[i].y  << ","
-        << "\"center_x\":" << detected_tags[i].center_x << ","
-        << "\"center_y\":" << detected_tags[i].center_y << ","
-        << "\"scale\":"  << detected_tags[i].scale << ","
-        << "\"est_z\":"  << detected_tags[i].est_z << "}";
+        << "\"id\":"       << tags_4pt[i].id << ","
+        << "\"x\":"        << tags_4pt[i].x  << ","
+        << "\"y\":"        << tags_4pt[i].y  << ","
+        << "\"center_x\":" << tags_4pt[i].center_x << ","
+        << "\"center_y\":" << tags_4pt[i].center_y << ","
+        << "\"scale\":"  << tags_4pt[i].scale << ","
+        << "\"est_z\":"  << tags_4pt[i].est_z << "}";
         
-        if (i < detected_tags.size() - 1) ss << ",";
+        if (i < tags_4pt.size() - 1) ss << ",";
     }
 
     ss << "]}";
