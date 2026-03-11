@@ -26,7 +26,7 @@ endpoint_offset_y = 0
 # Tag 5 is directly above tag 4 (-Y in image coords)
 # Tag 6 is directly left of tag 4 (-X in image coords)
 TAG5_OFFSET_X =   0.0
-TAG5_OFFSET_Y = -78.5
+TAG5_OFFSET_Y = 78.5
 TAG6_OFFSET_X = -78.5
 TAG6_OFFSET_Y =   0.0
 
@@ -165,9 +165,7 @@ def drawCanvas():
     global canvas
     canvas.fill(0)
 
-    # -------------------------
     # 4-point calibration tags
-    # -------------------------
     sum_cx = 0
     sum_cy = 0
     sum_scale = 0
@@ -214,9 +212,7 @@ def drawCanvas():
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         camera_logger.info("%.3f, %.3f", avg_cx, avg_cy)
 
-    # -------------------------
     # 3-point calibration tags
-    # -------------------------
     ref  = next((t for t in latest_3pt_data if t["id"] == 4), None)
     tag5 = next((t for t in latest_3pt_data if t["id"] == 5), None)
     tag6 = next((t for t in latest_3pt_data if t["id"] == 6), None)
