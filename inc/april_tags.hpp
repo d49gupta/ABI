@@ -47,6 +47,8 @@ public:
 	    tag_positions[4] = {0, 0};
         tag_positions[5] = {0, -side_offset};
         tag_positions[6] = {side_offset, 0};
+        // tag_positions[5] = {0, 0};
+        // tag_positions[6] = {0, 0};
 
         tag_sizes[0] = tag_size_corners;
         tag_sizes[1] = tag_size_corners;
@@ -76,11 +78,11 @@ public:
 private:
     apriltag_family_t *tf;
     apriltag_detector_t *td;
-    float tag_size_corners; // in mm
-    float tag_size_center; // in mm
-    float tag_size_side; // in mm
+    float tag_size_corners; // half the width of tag in mm
+    float tag_size_center; // half the width of tag in mm
+    float tag_size_side; // half the width of tag in mm
     float offset; // in terms of tag_size_corners (cm)
-    float side_offset; // cm
+    float side_offset; // center to center offset / half width of tag 
     float tag_offset;
     std::unordered_map<int, Point2D> tag_positions;
     std::unordered_map<int, float> tag_sizes;
