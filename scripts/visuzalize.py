@@ -117,11 +117,14 @@ def receiveCamera(payload):
     # split tags by role
     calibration_tags = [t for t in tags if t["id"] in (0,1,2,3,4)]
     side_tags = [t for t in tags if t["id"] in (5,6)]
-    # num_tags = len(tags)
+    num_tags = len(tags)
 
     sum_cx = 0
     sum_cy = 0
     sum_scale = 0
+
+    avg_cx = 0
+    avg_cy = 0
 
     # Draw all tags on cavas
     for tag in tags:
@@ -133,21 +136,21 @@ def receiveCamera(payload):
         cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
         
-        # Only use 4-point tags for center estimation
-        for tag in calibration_tags:
-            sum_cx += tag["center_x"]
-            sum_cy += tag["center_y"]
-            sum_scale += tag["scale"]
+    # Only use 4-point tags for center estimation
+    for tag in calibration_tags:
+        sum_cx += tag["center_x"]
+        sum_cy += tag["center_y"]
+        sum_scale += tag["scale"]
 
-            cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
-            cv2.putText(canvas, f"ID: {tag_id}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
-            
-        # Draw 3-point tags in different color
-        for tag in side_tags:
-            cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (255, 165, 0), -1)
-            cv2.putText(canvas, f"3PT ID:{tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 165, 0), 1)
+        cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
+        cv2.putText(canvas, f"ID: {tag["id"]}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+        
+    # Draw 3-point tags in different color
+    for tag in side_tags:
+        cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (255, 165, 0), -1)
+        # cv2.putText(canvas, f"3PT ID:{tag['id']}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
+        #         cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 165, 0), 1)
     
     num_calibration_tags = len(calibration_tags)
     if num_calibration_tags > 0:
