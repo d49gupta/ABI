@@ -45,10 +45,10 @@ public:
         tag_positions[2] = {tag_offset,  tag_offset};
         tag_positions[3] = {-tag_offset,  tag_offset};
 	    tag_positions[4] = {0, 0};
-        tag_positions[5] = {0, -side_offset};
-        tag_positions[6] = {side_offset, 0};
-        // tag_positions[5] = {0, 0};
-        // tag_positions[6] = {0, 0};
+        // tag_positions[5] = {0, -side_offset};
+        // tag_positions[6] = {side_offset, 0};
+        tag_positions[5] = {0, 0};
+        tag_positions[6] = {0, 0};
 
         tag_sizes[0] = tag_size_corners;
         tag_sizes[1] = tag_size_corners;
