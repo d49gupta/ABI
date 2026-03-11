@@ -26,8 +26,8 @@ endpoint_offset_y = 0
 # Tag 5 is directly above tag 4 (-Y in image coords)
 # Tag 6 is directly left of tag 4 (-X in image coords)
 TAG5_OFFSET_X =   0.0
-TAG5_OFFSET_Y = 78.5
-TAG6_OFFSET_X = -78.5
+TAG5_OFFSET_Y = -78.5
+TAG6_OFFSET_X = 78.5
 TAG6_OFFSET_Y =   0.0
 
 # Cached latest data from each MQTT topic
@@ -227,23 +227,41 @@ def drawCanvas():
         cv2.putText(canvas, "REF ID:4", (int(ref_cx) + 10, int(ref_cy) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 255), 1)
 
-        # Predicted target for tag 5 from tag 4 + known physical offset
-        pred5_x = int(ref_cx + TAG5_OFFSET_X / scale)
-        pred5_y = int(ref_cy + TAG5_OFFSET_Y / scale)
+       # Predicted target for tag 5
+        pred5_from_tag4_x = ref_cx + TAG5_OFFSET_X / scale
+        pred5_from_tag4_y = ref_cy + TAG5_OFFSET_Y / scale
+
+        if tag5:
+            # Average tag 4 prediction with tag 5's own homography center
+            pred5_x = int((pred5_from_tag4_x + tag5["center_x"]) / 2)
+            pred5_y = int((pred5_from_tag4_y + tag5["center_y"]) / 2)
+        else:
+            # Fall back to tag 4 prediction only
+            pred5_x = int(pred5_from_tag4_x)
+            pred5_y = int(pred5_from_tag4_y)
+
         cv2.circle(canvas, (pred5_x, pred5_y), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (pred5_x, pred5_y), 4,  (0, 0, 255), -1)
         cv2.putText(canvas, "PRED ID:5", (pred5_x + 15, pred5_y + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
-        print(f"PRED (ID 5): ({pred5_x}, {pred5_y})")
 
-        # Predicted target for tag 6 from tag 4 + known physical offset
-        pred6_x = int(ref_cx + TAG6_OFFSET_X / scale)
-        pred6_y = int(ref_cy + TAG6_OFFSET_Y / scale)
+        # Predicted target for tag 6
+        pred6_from_tag4_x = ref_cx + TAG6_OFFSET_X / scale
+        pred6_from_tag4_y = ref_cy + TAG6_OFFSET_Y / scale
+
+        if tag6:
+            # Average tag 4 prediction with tag 6's own homography center
+            pred6_x = int((pred6_from_tag4_x + tag6["center_x"]) / 2)
+            pred6_y = int((pred6_from_tag4_y + tag6["center_y"]) / 2)
+        else:
+            # Fall back to tag 4 prediction only
+            pred6_x = int(pred6_from_tag4_x)
+            pred6_y = int(pred6_from_tag4_y)
+
         cv2.circle(canvas, (pred6_x, pred6_y), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (pred6_x, pred6_y), 4,  (0, 0, 255), -1)
         cv2.putText(canvas, "PRED ID:6", (pred6_x + 15, pred6_y + 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 255), 1)
-        print(f"PRED (ID 6): ({pred6_x}, {pred6_y})")
 
     # Draw where the camera directly sees tags 5 and 6
     for tag in [tag5, tag6]:
