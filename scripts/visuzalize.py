@@ -22,6 +22,10 @@ pencil_logger = CSVLogger(name="pencil", log_dir="../test_logs")
 endpoint_offset_x = 0
 endpoint_offset_y = 0
 
+# Cached latest data from each MQTT topic
+latest_camera_data = []
+latest_3pt_data = []
+
 def on_connect(client, userdata, flags, rc):
     """
     When connected to the board setup subscribers to the camera module,
@@ -95,52 +99,77 @@ def receivePencil(payload):
     pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
     print(f"Received Pencil reading: {raw} bits")
 
-# TODO: Overlay this with a live compressed video feed
 def receiveCamera(payload):
     """
-    Processes 4-point AprilTag detection data (IDs 0-4) to update the global
-    canvas. Draws individual tag positions and calculates/visualizes the
-    average center point. Tags 5 and 6 are excluded on the C++ side and
-    handled separately via receive3ptCalibration().
+    Caches the latest 4-point AprilTag detection data (IDs 0-4) received
+    from the camera/detections MQTT topic. Drawing is handled by drawCanvas()
+    in the main loop to avoid canvas conflicts with receive3ptCalibration().
 
     Args:
         payload: A JSON string containing a list of "tags", each with x, y,
-                 id, center_x, and center_y.
+                 id, center_x, center_y, scale, and est_z.
 
     Returns:
         N/A
 
     Raises:
         JSONDecodeError: If the payload is not a valid JSON string.
-        ZeroDivisionError: Handled internally if no tags are detected.
+    """
+    global latest_camera_data
+    data = json.loads(payload)
+    latest_camera_data = data.get("tags", [])
+    print(f"Received {len(latest_camera_data)} 4pt tags")
+
+def receive3ptCalibration(payload):
+    """
+    Caches the latest 3-point calibration tag data (IDs 4, 5, 6) received
+    from the camera/3pt_calibration MQTT topic. Drawing is handled by
+    drawCanvas() in the main loop to avoid canvas conflicts with
+    receiveCamera().
+
+    Args:
+        payload: A JSON string containing a list of "tags" with id, center_x,
+                 center_y, scale, and est_z fields.
+
+    Returns:
+        N/A
+
+    Raises:
+        JSONDecodeError: If the payload is not a valid JSON string.
+    """
+    global latest_3pt_data
+    data = json.loads(payload)
+    latest_3pt_data = data.get("tags", [])
+    print(f"Received {len(latest_3pt_data)} 3pt tags")
+
+def drawCanvas():
+    """
+    Clears the canvas and redraws all tag data from both MQTT topics on each
+    frame. Uses cached latest_camera_data for 4-point tags and
+    latest_3pt_data for 3-point tags, ensuring both are always visible
+    regardless of topic publish rates.
+
+    Returns:
+        N/A
     """
     global canvas
-    data = json.loads(payload)
     canvas.fill(0)
-
-    tags = data.get("tags", [])
-    num_tags = len(tags)
 
     sum_cx = 0
     sum_cy = 0
     sum_scale = 0
     avg_cx = 0
     avg_cy = 0
+    num_tags = len(latest_camera_data)
 
-    for tag in tags:
-        x = int(tag["x"])
-        y = int(tag["y"])
+    # Draw 4-point calibration tags (IDs 0-4)
+    for tag in latest_camera_data:
+        x, y = int(tag["x"]), int(tag["y"])
         tag_id = tag["id"]
 
-        # Debug: print raw vs projected center per tag
-        # print(f"ID:{tag_id} x:{tag['x']:.1f} y:{tag['y']:.1f} cx:{tag['center_x']:.1f} cy:{tag['center_y']:.1f}")
-
-        # Draw raw tag centroid
         cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
         cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
-
-        # Draw projected center point
         cv2.circle(canvas, (int(tag["center_x"]), int(tag["center_y"])), 4, (0, 255, 0), -1)
         cv2.putText(canvas, f"ID: {tag_id}", (int(tag["center_x"]) + 10, int(tag["center_y"]) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
@@ -157,12 +186,10 @@ def receiveCamera(payload):
         projected_x = int(WINDOW_WIDTH / 2 + endpoint_offset_x / avg_scale)
         projected_y = int(WINDOW_HEIGHT / 2 + endpoint_offset_y / avg_scale)
 
-        # Plot the relation between the camera and the predicted center
         cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
         cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
 
-        # Draw target center circle and log
         cv2.circle(canvas, (avg_cx, avg_cy), 12, (0, 0, 255), 2)
         cv2.circle(canvas, (avg_cx, avg_cy), 4, (0, 0, 255), -1)
         inv_scale = 1 / avg_scale
@@ -170,32 +197,10 @@ def receiveCamera(payload):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
         camera_logger.info("%.3f, %.3f", avg_cx, avg_cy)
 
-    print(f"Received {num_tags} tags. Center: ({avg_cx}, {avg_cy})")
-
-def receive3ptCalibration(payload):
-    """
-    Receives 3-point calibration tag data (IDs 4, 5, 6) from the
-    camera/3pt_calibration MQTT topic. Tag 4 is the reference center point,
-    tags 5 and 6 are the calibration targets. Draws the tags on the canvas
-    and logs center positions to the console.
-
-    Args:
-        payload: A JSON string containing a list of "tags" with id, center_x,
-                 center_y, scale, and est_z fields.
-
-    Returns:
-        N/A
-
-    Raises:
-        JSONDecodeError: If the payload is not a valid JSON string.
-        KeyError: If expected keys are missing from the payload.
-    """
-    data = json.loads(payload)
-    tags = data.get("tags", [])
-
-    ref  = next((t for t in tags if t["id"] == 4), None)
-    tag5 = next((t for t in tags if t["id"] == 5), None)
-    tag6 = next((t for t in tags if t["id"] == 6), None)
+    # Draw 3-point calibration tags (IDs 4, 5, 6)
+    ref  = next((t for t in latest_3pt_data if t["id"] == 4), None)
+    tag5 = next((t for t in latest_3pt_data if t["id"] == 5), None)
+    tag6 = next((t for t in latest_3pt_data if t["id"] == 6), None)
 
     # Draw reference tag (ID 4) in yellow
     if ref:
@@ -203,7 +208,6 @@ def receive3ptCalibration(payload):
         cv2.circle(canvas, (cx, cy), 6, (0, 255, 255), -1)
         cv2.putText(canvas, "REF ID:4", (cx + 10, cy - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 255), 1)
-        print(f"REF  (ID 4): center=({ref['center_x']:.1f}, {ref['center_y']:.1f})  scale={ref['scale']:.4f}")
 
     # Draw 3-point target tags (IDs 5 and 6) in orange
     for tag in [tag5, tag6]:
@@ -212,7 +216,6 @@ def receive3ptCalibration(payload):
             cv2.circle(canvas, (cx, cy), 6, (0, 165, 255), -1)
             cv2.putText(canvas, f"3PT ID:{tag['id']}", (cx + 10, cy - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 165, 255), 1)
-            print(f"3PT  (ID {tag['id']}): center=({tag['center_x']:.1f}, {tag['center_y']:.1f})  scale={tag['scale']:.4f}")
 
 if __name__ == "__main__":
     client = mqtt.Client()
@@ -224,6 +227,7 @@ if __name__ == "__main__":
     client.loop_start()
 
     while True:
+        drawCanvas()
         cv2.imshow("AprilTag Real-Time Map", canvas)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
