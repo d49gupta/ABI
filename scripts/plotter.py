@@ -27,7 +27,7 @@ ax1.set_title("Camera State")
 ax1.grid(True, alpha=0.3)
 line_dx, = ax1.plot([], [], label='dx', color='#ff4b4b')
 line_dy, = ax1.plot([], [], label='dy', color='#2ecc71')
-line_dz, = ax1.plot([], [], label='dy', color="#291fbd")
+line_dz, = ax1.plot([], [], label='dz', color="#291fbd")
 ax1.legend(loc='upper right', ncol=3)
 ax1.set_ylim(-100, 100)
 

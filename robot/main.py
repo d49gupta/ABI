@@ -79,6 +79,7 @@ def find_pencil_depth():
                 three_point_pos.append(robot_pose_buffer[-1].pos.copy())
                 print(f"3-point position {len(three_point_pos)} recorded.")
             irc5.record_target()
+            time.sleep(1.0)
         else:
             controller_logger.error("Unable to store final robot position")
 
@@ -262,15 +263,16 @@ def move_xyz_target():
 
     irc5.move_rel_frame(dx_norm, dy_norm, dz_norm)
 
+def find_init_tags(): 
+    global motion_state
+    if not camera_buffer:
+        irc5.run_conveyor()
+    else:
+        irc5.stop_conveyor()
+        motion_state = MotionState.FIND_CENTER
+        controller_logger.info("Tags Found")
+        return
 
-# States where pencil interrupt should NOT trigger a depth search
-PENCIL_INTERRUPT_BLOCKED_STATES = {
-    MotionState.MOVE_TO_TAG5,
-    MotionState.MOVE_TO_TAG6,
-    MotionState.RETURN_TO_CENTER,
-    MotionState.ASCEND,
-    MotionState.IDLE,
-}
 
 if __name__ == "__main__":
     print("Connecting to sensors")
@@ -289,11 +291,14 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    motion_state = MotionState.FIND_CENTER
+    motion_state = MotionState.FIND_INIT_TAGS
     try:
         while True:
             if motion_state == MotionState.IDLE:
                 break
+            
+            if motion_state == MotionState.FIND_INIT_TAGS:
+                find_init_tags()
 
             if not sensors.connection_status() or not irc5.connection_status():
                 print("Lost connection to sensors or robot.")
