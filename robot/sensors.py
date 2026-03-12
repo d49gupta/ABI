@@ -28,13 +28,11 @@ tag5_scale  = None
 tag6_target = None
 tag6_scale  = None
 
-THREE_PT_TOPIC = "camera/3pt_calibration"
-
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
     client.subscribe(subscriber.camera_topic)
     client.subscribe(subscriber.pencil_topic)
-    client.subscribe(THREE_PT_TOPIC)
+    client.subscribe(subscriber.three_point_topic)
 
 def on_message(client, userdata, msg):
     try:
@@ -50,7 +48,7 @@ def on_message(client, userdata, msg):
                 receiveCameraSim(payload)
             else:
                 receiveCamera(payload)
-        elif msg.topic == THREE_PT_TOPIC:
+        elif msg.topic == subscriber.three_point_topic:
             receive3ptCalibration(payload)
 
     except Exception as e:

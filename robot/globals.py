@@ -20,9 +20,9 @@ class MotionState(Enum):
     FIND_INIT_TAGS = 5
 
     # For 3-point
-    RETURN_TO_CENTER = 5 # move back to saved robot pose above center of tag 4
-    MOVE_TO_TAG5 = 6 # move to predicted center of tag 5 in X-axis
-    MOVE_TO_TAG6 = 7 # move to predicted center of tag 6 in y-axis
+    RETURN_TO_CENTER = 6 # move back to saved robot pose above center of tag 4
+    MOVE_TO_TAG5 = 7 # move to predicted center of tag 5 in X-axis
+    MOVE_TO_TAG6 = 8 # move to predicted center of tag 6 in y-axis
 
 # --- DATACLASSES ---
 @dataclass
@@ -45,6 +45,7 @@ class MQTTState:
     mqtt_broker: str = "127.0.0.1"
     camera_topic: str = "camera/detections"
     pencil_topic: str = "pencil/reading"
+    three_point_topic = "camera/3pt_calibration"
     port: int = 1883
     client = None
     msg_count: int = 0
@@ -151,3 +152,4 @@ Kp_ascent = 0.1
 # --- RESULTS ---
 four_point_pos = []
 three_point_pos = []
+center_robot_pose = None

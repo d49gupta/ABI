@@ -6,8 +6,7 @@ import cv2
 import numpy as np
 
 motion_state = MotionState.IDLE
-calibration_mode = CalibrationMode.FOUR_POINT
-center_robot_pose = None  # Saved robot pose above tag 4 center
+calibration_mode = CalibrationMode.THREE_POINT
 
 def get_motion_state():
     return motion_state.value
@@ -72,7 +71,6 @@ def find_pencil_depth():
         controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
         
         if robot_pose_buffer:
-            # Branch on calibration mode to store in correct results list
             if calibration_mode == CalibrationMode.FOUR_POINT:
                 four_point_pos.append(robot_pose_buffer[-1].pos.copy())
             elif calibration_mode == CalibrationMode.THREE_POINT:
@@ -91,42 +89,6 @@ def find_pencil_depth():
         irc5.move_rel_frame(0, 0, dz)
         controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
 
-def ascent():
-    global motion_state, conveyor_state
-
-    ascent_diff = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
-    if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
-        print("Ascent Complete")
-        controller_logger.info("Ascent Complete")
-
-        if calibration_mode == CalibrationMode.FOUR_POINT:
-            if len(four_point_pos) >= 4:
-                print("Four Point Calibration Complete")
-                motion_state = MotionState.IDLE
-            else:
-                # More 4-point positions needed, run conveyor to next point
-                print("Running the Conveyor")
-                conveyor_state.running = True
-                irc5.run_conveyor()
-                conveyor_state.last_time = time.perf_counter()
-                motion_state = MotionState.FIND_CENTER
-
-        elif calibration_mode == CalibrationMode.THREE_POINT:
-            if len(three_point_pos) == 0:
-                # Ascended from center — record pose and move to tag 5
-                record_center_and_move_to_tag5()
-            elif len(three_point_pos) == 1:
-                # Ascended from tag 5 — return to center then go to tag 6
-                motion_state = MotionState.RETURN_TO_CENTER
-            elif len(three_point_pos) >= 2:
-                # Ascended from tag 6 — all 3 points recorded
-                print("Three Point Calibration Complete")
-                motion_state = MotionState.IDLE
-        return  # Do not move if ascent is complete
-
-    # Still ascending
-    irc5.move_rel_frame(0, 0, 2.0)
-    controller_logger.info("%d, 0, 0, 2.0", motion_state.value)
 
 def record_center_and_move_to_tag5():
     """
@@ -144,6 +106,39 @@ def record_center_and_move_to_tag5():
     else:
         controller_logger.error("No robot pose available to record center.")
         motion_state = MotionState.IDLE
+
+def ascent():
+    global motion_state, conveyor_state
+
+    if calibration_mode.value == CalibrationMode.FOUR_POINT.value:
+        ascent_diff = irc5.robot_state.initial_pos[2] - irc5.robot_state.pos[2]
+    # elif calibration_mode.value == CalibrationMode.THREE_POINT.value:
+    #     ascent diff has to be constant height up from first 3point robtarget
+
+    if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
+        print("Ascent Complete")
+        controller_logger.info("Ascent Complete")
+
+        if calibration_mode.value == CalibrationMode.FOUR_POINT.value:
+            if len(four_point_pos) >= 4:
+                print("Four Point Calibration Complete")
+                motion_state = MotionState.IDLE
+            else:
+                print("Running the Conveyor")
+                conveyor_state.running = True
+                irc5.run_conveyor()
+                conveyor_state.last_time = time.perf_counter()
+                motion_state = MotionState.FIND_CENTER
+
+        elif calibration_mode == CalibrationMode.THREE_POINT:
+            if len(three_point_pos) > 0:
+                motion_state = MotionState.MOVE_TO_TAG5
+            else:
+                print("Failed to record center target")
+    
+    dz = 2.0
+    controller_logger.info("%d, %.4f, %.4f, %.4f", motion_state.value, 0, 0, dz)
+    irc5.move_rel_frame(0, 0, dz)
 
 def return_to_center():
     """
