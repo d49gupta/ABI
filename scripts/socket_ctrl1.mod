@@ -18,23 +18,24 @@ MODULE socket_comms
     VAR pos move_data;
     !TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
     TASK PERS tooldata toolBladeTest := [TRUE, [[1.19, 1.1, 334.77], [1, 0, 0, 0]], [0.653, [11.99, -33.41, -0.98], [1, 0, 0, 0], 0, 0, 0]];
-    VAR speeddata vSlowYaw := [10, 10, 1000, 1000];
+    VAR speeddata speed_var := [5, 10, 1000, 1000];
     VAR num index := 1;
     PERS robtarget calibration_pose{4} := 
     [
-    [[279.488,-19.312,-538.991],[0.000143494,0.965922,0.258832,-0.00011993],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14724.8]],
-    [[301.416,-19.7475,-539.054],[0.000945091,0.96583,0.259157,0.00313846],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14750.8]],
-    [[324.189,-19.8434,-539.222],[0.00163557,0.965729,0.259473,0.00622472],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14776.2]],
-    [[348.793,-20.0385,-539.401],[0.00235769,0.965603,0.259838,0.00950471],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14803.3]]
+    [[428.351,0.414514,-861.818],[0.00046544,-0.965901,-0.258906,0.00135864],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1605.99]],
+    [[478.073,0.698729,-862.052],[1.67996E-05,-0.965876,-0.259003,-0.000787871],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1656.25]],
+    [[534.077,-1.23022,-862.791],[0.000749781,0.965906,0.258878,0.0028275],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,107.143]],
+    [[582.534,-1.02256,-863.246],[0.001097,0.965878,0.258958,0.00443628],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,155.249]]
     ];
     
-    PERS robtarget Point1 := [[279.488,-19.312,-538.991],[0.000143494,0.965922,0.258832,-0.00011993],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14724.8]];
-    PERS robtarget Point2 := [[301.416,-19.7475,-539.054],[0.000945091,0.96583,0.259157,0.00313846],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14750.8]];
-    PERS robtarget Point3 := [[324.189,-19.8434,-539.222],[0.00163557,0.965729,0.259473,0.00622472],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14776.2]];
-    PERS robtarget Point4 := [[348.793,-20.0385,-539.401],[0.00235769,0.965603,0.259838,0.00950471],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14803.3]];
+    PERS robtarget Point1 := [[427.787,-1.53588,-861.851],[0.000354235,-0.965932,-0.258792,0.00141893],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point2 := [[476.875,-1.41708,-862.437],[0.000190237,0.965926,0.258816,0.000693373],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,49.6459]];
+    PERS robtarget Point3 := [[534.077,-1.23022,-862.791],[0.000749781,0.965906,0.258878,0.0028275],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,107.143]];
+    PERS robtarget Point4 := [[582.534,-1.02256,-863.246],[0.001097,0.965878,0.258958,0.00443628],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,155.249]];
     
     PROC openSocket()
         ActUnit CNV1;
+        ClearWobj;
         target_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0); ! Default is tool0      
         SocketCreate server_socket;
         SocketBind server_socket, client_real_ip, 4000;
@@ -82,7 +83,7 @@ MODULE socket_comms
     ENDPROC
         
     PROC MOVE_REL()
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v5, fine, toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, fine, toolBladeTest;
         !WaitRob\InPos;
     ENDPROC
     
@@ -93,24 +94,36 @@ MODULE socket_comms
     
     PROC MOVE_CONVEYOR()
         ErrWRite\I,"Turning On CNV ","Turning On CNV";
+        speed_var := [10, 50, 5000, 1000];
         Set do_CNV_Fwd;
     ENDPROC
     
     PROC STOP_CONVEYOR()
         ErrWRite\I,"Turning Off CNV ","Turning Off CNV";
+        speed_var := [5, 50, 5000, 1000];
         reset do_CNV_Fwd;
     ENDPROC
     
     PROC RECORD_POINT()
+        WaitRob\InPos;
+        current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
         IF index >= 1 AND index <= 4 THEN
-            calibration_pose{index} := CRobT(\Tool:=tool0 \WObj:=wobj0);
+            calibration_pose{index} := current_pose;
+        ENDIF
+        IF index = 1 THEN
+            Point1 := current_pose;
+        ELSEIF index = 2 THEN
+            Point2 := current_pose;
+        ELSEIF index = 3 THEN
+            Point3 := current_pose;
+        ELSEIF index = 4 THEN
+            Point4 := current_pose;
         ENDIF
         index := index + 1;
     ENDPROC
     
     PROC Calibrate()
-       openSocket;
-        
+        openSocket;
         WHILE TRUE DO
             Send;
             Receive;

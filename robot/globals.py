@@ -17,6 +17,7 @@ class MotionState(Enum):
     DESCEND = 2
     FIND_DEPTH = 3
     ASCEND = 4
+    FIND_INIT_TAGS = 5
 
 # --- DATACLASSES ---
 @dataclass
@@ -32,6 +33,7 @@ class cameraState:
     center_y: int = 0
     scale: float = 0.0
     timestamp: float = 0
+    numb_tags: int = 0
 
 @dataclass
 class MQTTState:
@@ -76,7 +78,7 @@ class robotState:
     timestamp: int = 0
 
 # --- GLOBALS ---
-# MQTT_BROKER = "fe80::80ee:98fe:7fcb:95c3%16"
+MQTT_HOTSPOT_BROKER = "172.20.10.5"
 SIM_MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "10.89.1.194"
 MQTT_ABI_BROKER = "10.89.1.194"
@@ -87,19 +89,19 @@ WINDOW_HEIGHT = 480
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
 
-X_TARGET = 489.75
-Y_TARGET = 55.99
-Z_TARGET = -905.67
+X_TARGET = 580.761
+Y_TARGET = 14.81
+Z_TARGET = -905.68
 Z_THRESH = 8.0
 Z_TARGET_DEPTH = 4.0
 Z_ACTIVE = 1.0
 XY_TARGET_ACC = 1.0
 Z_TARGET_ACC = 0.1
 ASCENT_HEIGHT_DIFF = 5.0
-PENCIL_Z_OFFSET = 40 # mm (165)
-ROBOT_PUBLISH_RATE = 0.33 # seconds, should not be faster than camera frequency
+PENCIL_Z_OFFSET = 60 # mm (165)
+ROBOT_PUBLISH_RATE = 0.35 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
-CONVEYOR_MOVE_TIME = 1.0
+CONVEYOR_MOVE_TIME = 1.5
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()

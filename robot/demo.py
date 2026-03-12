@@ -54,14 +54,14 @@ if __name__ == "__main__":
             correction = sensors.correction_buffer[-1]
             dx = X_TARGET + correction.dx
             dy = Y_TARGET - correction.dy
-            dz = Z_TARGET + correction.dz # TODO: NEED to properly account for height diff between TCP and camera
+            dz = Z_TARGET + correction.dz - PENCIL_Z_OFFSET # TODO: NEED to properly account for height diff between TCP and camera
 
             current_time = time.perf_counter()
             if current_time - last_time < ROBOT_PUBLISH_RATE:
                 continue
 
             last_time = current_time
-            # irc5.move_robot_frame(dx, dy, dz)
+            irc5.move_robot_frame(dx, dy, dz)
             main.state_machine()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET

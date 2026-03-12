@@ -73,6 +73,7 @@ def find_pencil_depth():
         if robot_pose_buffer:
             four_point_pos.append(robot_pose_buffer[-1].pos.copy())
             irc5.record_target()
+            time.sleep(1.0)
         else:
             controller_logger.error("Unable to store final robot position")
 
@@ -93,7 +94,12 @@ def ascent():
         if calibration_mode.value == CalibrationMode.FOUR_POINT.value and len(four_point_pos) >= 4:
             print("Four Point Calibration Complete")
             motion_state = MotionState.IDLE
+            three_point_pos.append(robot_pose_buffer[-1].pos.copy())
+            print(four_point_pos)
+            print("")
+            print(three_point_pos)
         else:
+            three_point_pos.append(robot_pose_buffer[-1].pos.copy())
             print("Running the Conveyor")
             conveyor_state.running = True
             irc5.run_conveyor()
@@ -155,6 +161,16 @@ def move_xyz_target():
 
     irc5.move_rel_frame(dx_norm, dy_norm, dz_norm)
 
+def find_init_tags(): 
+    global motion_state
+    if not camera_buffer:
+        irc5.run_conveyor()
+    else:
+        irc5.stop_conveyor()
+        motion_state = MotionState.FIND_CENTER
+        controller_logger.info("Tags Found")
+        return
+
 
 if __name__ == "__main__":
     print("Connecting to sensors")
@@ -175,11 +191,14 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    motion_state = MotionState.FIND_CENTER
+    motion_state = MotionState.FIND_INIT_TAGS
     try:
         while True:
             if motion_state == MotionState.IDLE:
                 break
+            
+            if motion_state == MotionState.FIND_INIT_TAGS:
+                find_init_tags()
 
             if not sensors.connection_status() or not irc5.connection_status():
                 print("Lost connection to sensors or robot.")
