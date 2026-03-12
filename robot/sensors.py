@@ -13,10 +13,28 @@ import math
 pencil_offset_x = 0
 pencil_offset_y = 0
 
+# Physical offsets from center of tag 4 to center of tags 5 and 6 (mm)
+# Tag 5 is directly above tag 4 (-Y in image coords)
+# Tag 6 is directly left of tag 4 (-X in image coords)
+TAG5_OFFSET_X =   0.0
+TAG5_OFFSET_Y = -78.5
+TAG6_OFFSET_X = -78.5
+TAG6_OFFSET_Y =   0.0
+
+# 3-point calibration targets — updated by receive3ptCalibration()
+# (pred_x, pred_y) in pixel space, averaged from tag 4 offset + tag own center
+tag5_target = None
+tag5_scale  = None
+tag6_target = None
+tag6_scale  = None
+
+THREE_PT_TOPIC = "camera/3pt_calibration"
+
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
     client.subscribe(subscriber.camera_topic)
     client.subscribe(subscriber.pencil_topic)
+    client.subscribe(THREE_PT_TOPIC)
 
 def on_message(client, userdata, msg):
     try:
@@ -32,6 +50,8 @@ def on_message(client, userdata, msg):
                 receiveCameraSim(payload)
             else:
                 receiveCamera(payload)
+        elif msg.topic == THREE_PT_TOPIC:
+            receive3ptCalibration(payload)
 
     except Exception as e:
             print(f"Error processing message on {msg.topic}: {e}")
@@ -53,8 +73,6 @@ def receivePencil(payload):
     pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
-
-    # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
 
 def receivePencilSim(payload):
     data = json.loads(payload)
@@ -122,7 +140,6 @@ def receiveCamera(payload):
         correction.dy  = -(avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dx = -(avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
         correction.dz = avg_dz
-        # correction.dz = math.sqrt(avg_dz ** 2 + correction.dy ** 2 + correction.dx ** 2) # TODO: need to check if this will work
         correction.timestamp = timestamp
 
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
@@ -148,10 +165,78 @@ def receiveCamera(payload):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                 cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_dz:.2f} mm", (75, 75),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-
-        # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
     else:
         camera_logger.warning("No detected tags")
+
+def receive3ptCalibration(payload):
+    """
+    Processes 3-point calibration tag data (IDs 4, 5, 6) from the
+    camera/3pt_calibration MQTT topic. Computes predicted pixel-space
+    targets for tags 5 and 6 by averaging the prediction from tag 4's
+    known physical offset with each tag's own homography center if visible.
+    Updates module-level tag5_target, tag5_scale, tag6_target, tag6_scale.
+
+    Args:
+        payload: A JSON string containing a list of "tags" with id, center_x,
+                 center_y, scale, and est_z fields.
+
+    Returns:
+        N/A
+
+    Raises:
+        JSONDecodeError: If the payload is not a valid JSON string.
+        KeyError: If expected keys are missing from the payload.
+    """
+    global tag5_target, tag5_scale, tag6_target, tag6_scale
+
+    data = json.loads(payload)
+    tags = data.get("tags", [])
+
+    ref  = next((t for t in tags if t["id"] == 4), None)
+    tag5 = next((t for t in tags if t["id"] == 5), None)
+    tag6 = next((t for t in tags if t["id"] == 6), None)
+
+    if ref is None:
+        # Cannot compute predictions without the reference tag
+        return
+
+    ref_cx = ref["center_x"]
+    ref_cy = ref["center_y"]
+    scale  = ref["scale"]  # mm per pixel
+
+    # Predicted center of tag 5 from tag 4 + known physical offset
+    pred5_from_tag4_x = ref_cx + TAG5_OFFSET_X / scale
+    pred5_from_tag4_y = ref_cy + TAG5_OFFSET_Y / scale
+
+    if tag5:
+        # Average tag 4 prediction with tag 5's own homography center
+        pred5_x = (pred5_from_tag4_x + tag5["center_x"]) / 2
+        pred5_y = (pred5_from_tag4_y + tag5["center_y"]) / 2
+        tag5_scale = (scale + tag5["scale"]) / 2
+    else:
+        # Fall back to tag 4 prediction only
+        pred5_x = pred5_from_tag4_x
+        pred5_y = pred5_from_tag4_y
+        tag5_scale = scale
+
+    tag5_target = (pred5_x, pred5_y)
+
+    # Predicted center of tag 6 from tag 4 + known physical offset
+    pred6_from_tag4_x = ref_cx + TAG6_OFFSET_X / scale
+    pred6_from_tag4_y = ref_cy + TAG6_OFFSET_Y / scale
+
+    if tag6:
+        # Average tag 4 prediction with tag 6's own homography center
+        pred6_x = (pred6_from_tag4_x + tag6["center_x"]) / 2
+        pred6_y = (pred6_from_tag4_y + tag6["center_y"]) / 2
+        tag6_scale = (scale + tag6["scale"]) / 2
+    else:
+        # Fall back to tag 4 prediction only
+        pred6_x = pred6_from_tag4_x
+        pred6_y = pred6_from_tag4_y
+        tag6_scale = scale
+
+    tag6_target = (pred6_x, pred6_y)
 
 def connect_sensors():
     subscriber.client = mqtt.Client()

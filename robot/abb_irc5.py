@@ -94,6 +94,17 @@ def record_target():
 def disconnect_robot():
     robot_config.socket.close()
 
+def move_to_saved_pose(target_pos):
+    """
+    Commands the robot to move directly to a saved absolute XYZ position
+    using the robot body frame. Intended for returning to a previously
+    recorded pose such as the center point above tag 4.
+
+    Args:
+        target_pos (np.ndarray): Target [x, y, z] position in robot frame.
+    """
+    move_robot_frame(target_pos[0], target_pos[1], target_pos[2])
+
 if __name__ == "__main__":
     connect_robot()
     start_reading_robot()

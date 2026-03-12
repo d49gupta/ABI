@@ -18,6 +18,11 @@ class MotionState(Enum):
     FIND_DEPTH = 3
     ASCEND = 4
 
+    # For 3-point
+    RETURN_TO_CENTER = 5 # move back to saved robot pose above center of tag 4
+    MOVE_TO_TAG5 = 6 # move to predicted center of tag 5 in X-axis
+    MOVE_TO_TAG6 = 7 # move to predicted center of tag 6 in y-axis
+
 # --- DATACLASSES ---
 @dataclass
 class pencilState:
