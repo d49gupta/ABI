@@ -17,6 +17,7 @@ class MotionState(Enum):
     DESCEND = 2
     FIND_DEPTH = 3
     ASCEND = 4
+    FIND_INIT_TAGS = 5
 
 # --- DATACLASSES ---
 @dataclass
@@ -32,6 +33,7 @@ class cameraState:
     center_y: int = 0
     scale: float = 0.0
     timestamp: float = 0
+    numb_tags: int = 0
 
 @dataclass
 class MQTTState:
@@ -97,9 +99,9 @@ XY_TARGET_ACC = 1.0
 Z_TARGET_ACC = 0.1
 ASCENT_HEIGHT_DIFF = 5.0
 PENCIL_Z_OFFSET = 60 # mm (165)
-ROBOT_PUBLISH_RATE = 0.33 # seconds, should not be faster than camera frequency
+ROBOT_PUBLISH_RATE = 0.35 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
-CONVEYOR_MOVE_TIME = 1.0
+CONVEYOR_MOVE_TIME = 1.5
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
@@ -130,8 +132,8 @@ camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
 controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
-subscriber = MQTTState(mqtt_broker=MQTT_HOTSPOT_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
+subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
+robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
 
 # --- CONTROLLERS ---
 alpha_camera = 0.5

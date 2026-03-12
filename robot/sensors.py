@@ -118,9 +118,10 @@ def receiveCamera(payload):
         camera_sample.center_x = int(avg_cx)
         camera_sample.center_y = int(avg_cy)
         camera_sample.timestamp = timestamp
+        camera_sample.num_tags = num_tags
 
-        correction.dy  = -(avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
-        correction.dx = -(avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
+        correction.dy  = (avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
+        correction.dx = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
         correction.dz = avg_dz
         # correction.dz = math.sqrt(avg_dz ** 2 + correction.dy ** 2 + correction.dx ** 2) # TODO: need to check if this will work
         correction.timestamp = timestamp
