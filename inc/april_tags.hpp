@@ -45,19 +45,17 @@ public:
         tag_positions[2] = {tag_offset,  tag_offset};
         tag_positions[3] = {-tag_offset,  tag_offset};
 	    tag_positions[4] = {0, 0};
-        // tag_positions[5] = {0, -side_offset};
-        // tag_positions[6] = {side_offset, 0};
-        tag_positions[5] = {0, 0};
-        tag_positions[6] = {0, 0};
+        tag_positions[5] = {0, -side_offset}; // TODO: check that tag5 is on x axis, tag6 on y axis and that signs are correct
+        tag_positions[6] = {side_offset, 0};
 
         tag_sizes[0] = tag_size_corners;
         tag_sizes[1] = tag_size_corners;
         tag_sizes[2] = tag_size_corners;
         tag_sizes[3] = tag_size_corners;
         tag_sizes[4] = tag_size_center;
-
         tag_sizes[5] = tag_size_side;
         tag_sizes[6] = tag_size_side;
+
     }
 
     ~AprilTagDetector() 
@@ -86,6 +84,7 @@ private:
     float tag_offset;
     std::unordered_map<int, Point2D> tag_positions;
     std::unordered_map<int, float> tag_sizes;
+    std::unordered_map<int, Point2D> 3point_location;
 };
 
 #endif
