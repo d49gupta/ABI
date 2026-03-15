@@ -78,6 +78,8 @@ MODULE socket_comms
                 STOP_CONVEYOR;
             CASE 7:
                 RECORD_POINT;
+            CASE 5:
+                GoHomeJ;
             ENDTEST
         ENDIF
     ENDPROC

@@ -32,10 +32,8 @@ class AprilTagDetector
 {
 public:
     AprilTagDetector(float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset) 
-    : tag_size_corners(tag_size_corners), tag_size_center(tag_size_center), tag_size_side(tag_size_side), offset(offset), side_offset(side_offset)
+    : tag_size_corners(tag_size_corners), tag_size_center(tag_size_center), tag_size_side(tag_size_side), tag_offset(offset), side_offset(side_offset)
     {
-        tag_offset = offset;
-        // side_tag_offset = side_offset; // Offsets of tags for 3-point calibration
 	    tf = tag36h11_create();
         td = apriltag_detector_create();
         apriltag_detector_add_family(td, tf);
@@ -45,8 +43,14 @@ public:
         tag_positions[2] = {tag_offset,  tag_offset};
         tag_positions[3] = {-tag_offset,  tag_offset};
 	    tag_positions[4] = {0, 0};
-        tag_positions[5] = {0, -side_offset}; // TODO: check that tag5 is on x axis, tag6 on y axis and that signs are correct
-        tag_positions[6] = {side_offset, 0};
+
+        tag_positions_x[4] = {-side_offset, 0};
+        tag_positions_x[5] = {0, 0};
+        tag_positions_x[6] = {-side_offset, -side_offset}; // TODO: Check signs and that tag 5 is x axis tag
+
+        tag_positions_y[4] = {0, -side_offset};
+        tag_positions_y[5] = {-side_offset, -side_offset};
+        tag_positions_y[6] = {0, 0}; // TODO: Check signs and that tag 6 is y axis tag
 
         tag_sizes[0] = tag_size_corners;
         tag_sizes[1] = tag_size_corners;
@@ -55,7 +59,6 @@ public:
         tag_sizes[4] = tag_size_center;
         tag_sizes[5] = tag_size_side;
         tag_sizes[6] = tag_size_side;
-
     }
 
     ~AprilTagDetector() 
@@ -72,6 +75,8 @@ public:
 
     size_t num_tags;
     std::vector<AprilTag> detected_tags;
+    std::vector<AprilTag> detected_tags_x;
+    std::vector<AprilTag> detected_tags_y;
 
 private:
     apriltag_family_t *tf;
@@ -79,12 +84,12 @@ private:
     float tag_size_corners; // half the width of tag in mm
     float tag_size_center; // half the width of tag in mm
     float tag_size_side; // half the width of tag in mm
-    float offset; // in terms of tag_size_corners (cm)
     float side_offset; // center to center offset / half width of tag 
-    float tag_offset;
+    float tag_offset; // in terms of tag_size_corners (mm)
     std::unordered_map<int, Point2D> tag_positions;
+    std::unordered_map<int, Point2D> tag_positions_x;
+    std::unordered_map<int, Point2D> tag_positions_y;
     std::unordered_map<int, float> tag_sizes;
-    std::unordered_map<int, Point2D> 3point_location;
 };
 
 #endif

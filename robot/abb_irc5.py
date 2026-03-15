@@ -91,6 +91,15 @@ def record_target():
     command = f"7"
     robot_config.socket.sendall(command.encode('utf-8'))
 
+def move_robot_home():
+    if robot_pose_buffer:
+        print("Moving Home")
+        initial_pos = robot_pose_buffer[-1].initial_pos
+        move_robot_frame(initial_pos[0], initial_pos[1], initial_pos[2])
+    else:
+        robot_logger.error("Unable to move back home!")
+        print("Unable to move back home!")
+
 def disconnect_robot():
     robot_config.socket.close()
 
@@ -112,11 +121,8 @@ if __name__ == "__main__":
 
     try:
         while True:
-            move_rel_frame(0, -5, 0)
-            # print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
-            # run_conveyor()
-            # time.sleep(5)
-            # stop_conveyor()
+            move_rel_frame(10, 0, 0)
+            print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:

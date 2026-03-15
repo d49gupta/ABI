@@ -9,6 +9,8 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     this->num_tags = zarray_size(detections);
     std::cout<<"Number of tags detected: " << this->num_tags << std::endl;
     this->detected_tags.clear();
+    this->detected_tags_x.clear();
+    this->detected_tags_y.clear();
 
     for (size_t i = 0; i < this->num_tags; i++) 
     {
@@ -20,17 +22,35 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         td.x = det->c[0];
         td.y = det->c[1];
 
-        Point2D p = project_relative_point(det, tag_positions[det->id].x, tag_positions[det->id].y);
-        td.center_x = p.x;
-        td.center_y = p.y;
-        
+        const auto& pos = tag_positions[det->id];
+        float curr_tag_size = this->tag_sizes[det->id];
         double dx = det->p[1][0] - det->p[0][0];
         double dy = det->p[1][1] - det->p[0][1];
-        float curr_tag_size = this->tag_sizes[det->id];
         td.scale = curr_tag_size * 2 / std::sqrt(dx*dx + dy*dy); // mm / pixels
         td.est_z = FOCAL_LENGTH * curr_tag_size * 2 / std::sqrt(dx*dx + dy*dy); // mm
-        
+
+        Point2D center = project_relative_point(det, pos.x, pos.y);
+        td.center_x = center.x;
+        td.center_y = center.y;
+    
         this->detected_tags.push_back(td);
+        
+        #ifdef THREE_POINT
+        if (detected_tags_x.count(det->id))
+        {
+            Point2D x_est = project_relative_point(det, tag_positions_x[det->id].x, tag_positions_x[det->id].y);
+            Point2D y_est = project_relative_point(det, tag_positions_y[det->id].x, tag_positions_y[det->id].y);
+
+            AprilTag td_extra = td;
+            td_extra.center_x = x_est.x;
+            td_extra.center_y = x_est.y;
+            this->detected_tags_x.push_back(td_extra);
+
+            td_extra.center_x = y_est.x;
+            td_extra.center_y = y_est.y;
+            this->detected_tags_y.push_back(td_extra);
+        }
+        #endif
     }
 
     apriltag_detections_destroy(detections);
@@ -52,31 +72,6 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     pixel.x = (x_prime / z_prime);
     pixel.y = (y_prime / z_prime);
 
-    // Apply radial distortion correction
-    const double IMAGE_WIDTH = 640.0;   // Adjust to your camera resolution
-    const double IMAGE_HEIGHT = 480.0;  // Adjust to your camera resolution
-    const double cx = IMAGE_WIDTH / 2.0;
-    const double cy = IMAGE_HEIGHT / 2.0;
-    
-    // Vector from image center to projected point
-    double dx = pixel.x - cx;
-    double dy = pixel.y - cy;
-    
-    // Distance from center
-    double r = std::sqrt(dx * dx + dy * dy);
-    
-    // Radial correction factor (tune this value experimentally)
-    const double DISTORTION_K = -0.25;  // Start with 0.05, adjust as needed
-    double correction = r * DISTORTION_K;
-    
-    // Apply correction along radial direction
-    //if (r > 0) {
-    if (false) {
-        pixel.x += (dx / r) * correction;  // Use + for barrel distortion
-        pixel.y += (dy / r) * correction;  // Use - for pincushion distortion
-    }
-
-
     return pixel;
 }
 
@@ -93,7 +88,11 @@ std::string AprilTagDetector::JSONOutput()
     std::stringstream ss;
     ss << "{ \"count\": " << detected_tags.size() << ", \"tags\": [";
 
-    for (size_t i = 0; i < detected_tags.size(); i++) {
+    for (size_t i = 0; i < detected_tags.size(); i++) 
+    {
+        if (!tag_positions.count(detected_tags[i].id))
+            continue;
+        
         ss << "{"
         << "\"id\":"       << detected_tags[i].id << ","
         << "\"x\":"        << detected_tags[i].x  << ","
@@ -115,23 +114,29 @@ std::string AprilTagDetector::JSONOutput()
 std::string AprilTagDetector::JSONOutput3pt()
 {
     std::stringstream ss;
-    // filter out the 4-point calibration tags
-    std::vector<AprilTag> tags_3pt;
-    for (const auto& tag : detected_tags)
-        if (tag.id == 4 || tag.id == 5 || tag.id == 6)
-            tags_3pt.push_back(tag);
-
-    ss << "{ \"count\": " << tags_3pt.size() << ", \"tags\": [";
-    for (size_t i = 0; i < tags_3pt.size(); i++) {
+    ss << "{ \"count_x\": " << detected_tags_x.size() << ", \"tags_x\": [";
+    for (size_t i = 0; i < detected_tags_x.size(); i++) {
         ss << "{"
-           << "\"id\":"       << tags_3pt[i].id << ","
-           << "\"x\":"        << tags_3pt[i].x  << ","
-           << "\"y\":"        << tags_3pt[i].y  << ","
-           << "\"center_x\":" << tags_3pt[i].center_x << ","
-           << "\"center_y\":" << tags_3pt[i].center_y << ","
-           << "\"scale\":"    << tags_3pt[i].scale << ","
-           << "\"est_z\":"    << tags_3pt[i].est_z << "}";
-        if (i < tags_3pt.size() - 1) ss << ",";
+           << "\"id\":"       << detected_tags_x[i].id << ","
+           << "\"x\":"        << detected_tags_x[i].x  << ","
+           << "\"y\":"        << detected_tags_x[i].y  << ","
+           << "\"center_x\":" << detected_tags_x[i].center_x << ","
+           << "\"center_y\":" << detected_tags_x[i].center_y << ","
+           << "\"scale\":"    << detected_tags_x[i].scale << ","
+           << "\"est_z\":"    << detected_tags_x[i].est_z << "}";
+        if (i < detected_tags_x.size() - 1) ss << ",";
+    }
+    ss << "], \"count_y\": " << detected_tags_y.size() << ", \"tags_y\": [";
+    for (size_t i = 0; i < detected_tags_y.size(); i++) {
+        ss << "{"
+           << "\"id\":"       << detected_tags_y[i].id << ","
+           << "\"x\":"        << detected_tags_y[i].x  << ","
+           << "\"y\":"        << detected_tags_y[i].y  << ","
+           << "\"center_x\":" << detected_tags_y[i].center_x << ","
+           << "\"center_y\":" << detected_tags_y[i].center_y << ","
+           << "\"scale\":"    << detected_tags_y[i].scale << ","
+           << "\"est_z\":"    << detected_tags_y[i].est_z << "}";
+        if (i < detected_tags_y.size() - 1) ss << ",";
     }
     ss << "]}";
     return ss.str();

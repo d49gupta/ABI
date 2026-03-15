@@ -40,9 +40,14 @@ void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* bu
         image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
         detector.detectTags(&img);
         std::string jsonOutput = detector.JSONOutput();
-        std::string jsonOutput3pt = detector.JSONOutput3pt();
         publisher.sendMessage("camera/detections", jsonOutput);
-        publisher.sendMessage("camera/3pt_calibration", jsonOutput3pt);
+        #ifdef THREE_POINT
+            std::cout << "Running 3PT mode!" << std::endl;
+            std::string jsonOutput3pt = detector.JSONOutput3pt();
+            publisher.sendMessage("camera/3pt_calibration", jsonOutput3pt);
+        #else
+            std::cout << "Running Standard mode!" << std::endl;
+        #endif
         std::cin.ignore(size / 2); 
     }
 

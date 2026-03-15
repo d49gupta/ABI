@@ -119,6 +119,8 @@ pencil_buffer = deque(maxlen=50)
 camera_buffer = deque(maxlen=10)
 correction_buffer = deque(maxlen=10)
 robot_pose_buffer = deque(maxlen=25)
+x_correction_buffer = deque(maxlen=10)
+y_correction_buffer = deque(maxlen=10)
 
 # --- STATES ---
 correction = CorrectionState()
@@ -126,6 +128,8 @@ pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
 conveyor_state = conveyorState()
+x_correction = CorrectionState()
+y_correction = CorrectionState()
 final_robot_pose = None
 state_last_time = time.perf_counter()
 
@@ -139,7 +143,7 @@ controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
 subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
+robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
 
 # --- CONTROLLERS ---
 alpha_camera = 0.5

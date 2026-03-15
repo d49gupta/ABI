@@ -49,7 +49,7 @@ def on_message(client, userdata, msg):
             else:
                 receiveCamera(payload)
         elif msg.topic == subscriber.three_point_topic:
-            receive3ptCalibration(payload)
+            receive3Point(payload)
 
     except Exception as e:
             print(f"Error processing message on {msg.topic}: {e}")
@@ -86,6 +86,14 @@ def receiveCameraSim(payload):
     correction.dy = int(data["correction_y"])
     curr_correction_sample = replace(correction)
     correction_buffer.append(curr_correction_sample)
+
+def receive3Point(payload):
+    global canvas
+    canvas.fill(0)
+
+    data = json.loads(payload)
+    x_tags = data.get("tags_x", [])
+    y_tags = data.get("tags_y", [])
 
 def receiveCamera(payload):
     global canvas

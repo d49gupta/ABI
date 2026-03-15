@@ -9,8 +9,13 @@ fi
 cd build || exit
 
 # 2. Run CMake and Make
-# Assuming you use CMake; if just a Makefile, remove the cmake line
-cmake ..
+if [ "$1" == "three-point" ]; then
+    echo "Rebuilding with FEATURE_X enabled..."
+    cmake -DCMAKE_CXX_FLAGS="-DTHREE_POINT" ..
+else
+    echo "Rebuilding with Standard mode..."
+    cmake -DCMAKE_CXX_FLAGS="" ..
+fi
 make -j$(nproc)
 
 # 3. Check if build was successful before running
