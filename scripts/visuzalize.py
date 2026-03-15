@@ -7,7 +7,7 @@ from logger import CSVLogger
 # MQTT_BROKER = "192.168.0.43"
 MQTT_BROKER = "172.20.10.5"
 # MQTT_BROKER = "127.0.0.1"
-CAMERA_TOPIC = "camera/detections"
+CAMERA_TOPIC = "camera/center_est"
 PENCIL_TOPIC = "pencil/reading"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480

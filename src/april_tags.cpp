@@ -7,6 +7,11 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
     std::cout<<"Number of tags detected: " << this->num_tags << std::endl;
     this->detected_tags.clear();
 
+    #ifdef THREE_POINT
+    this->detected_tags_x.clear();
+    this->detected_tags_y.clear();
+    #endif
+
     for (size_t i = 0; i < this->num_tags; i++) 
     {
         apriltag_detection_t *det;
@@ -17,23 +22,37 @@ bool AprilTagDetector::detectTags(image_u8_t* img)
         td.x = det->c[0];
         td.y = det->c[1];
 
-        Point2D p = project_relative_point(det, tag_positions[det->id].x, tag_positions[det->id].y);
-        td.center_x = p.x;
-        td.center_y = p.y;
-        
+        const auto& pos = tag_positions[det->id];
+        float curr_tag_size = this->tag_sizes[det->id];
         double dx = det->p[1][0] - det->p[0][0];
         double dy = det->p[1][1] - det->p[0][1];
-        float curr_tag_size = this->tag_sizes[det->id];
         td.scale = curr_tag_size * 2 / std::sqrt(dx*dx + dy*dy); // mm / pixels
         td.est_z = FOCAL_LENGTH * curr_tag_size * 2 / std::sqrt(dx*dx + dy*dy); // mm
-        
+
+        Point2D center = project_relative_point(det, pos.x, pos.y);
+        td.center_x = center.x;
+        td.center_y = center.y;
+    
         this->detected_tags.push_back(td);
+        
+        #ifdef THREE_POINT
+        Point2D x_est = project_relative_point(det, tag_positions_x[det->id].x, tag_positions_x[det->id].y);
+        Point2D y_est = project_relative_point(det, tag_positions_y[det->id].x, tag_positions_y[det->id].y);
+
+        AprilTag td_extra = td;
+        td_extra.center_x = x_est.x;
+        td_extra.center_y = x_est.y;
+        this->detected_tags_x.push_back(td_extra);
+
+        td_extra.center_x = y_est.x;
+        td_extra.center_y = y_est.y;
+        this->detected_tags_y.push_back(td_extra);
+        #endif
     }
 
     apriltag_detections_destroy(detections);
     return this->num_tags > 0;
 }
-
 Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, double offset_x, double offset_y) 
 {
     double* h = det->H->data;
@@ -47,31 +66,6 @@ Point2D AprilTagDetector::project_relative_point(apriltag_detection_t *det, doub
     pixel.x = (x_prime / z_prime);
     pixel.y = (y_prime / z_prime);
 
-    // Apply radial distortion correction
-    const double IMAGE_WIDTH = 640.0;   // Adjust to your camera resolution
-    const double IMAGE_HEIGHT = 480.0;  // Adjust to your camera resolution
-    const double cx = IMAGE_WIDTH / 2.0;
-    const double cy = IMAGE_HEIGHT / 2.0;
-    
-    // Vector from image center to projected point
-    double dx = pixel.x - cx;
-    double dy = pixel.y - cy;
-    
-    // Distance from center
-    double r = std::sqrt(dx * dx + dy * dy);
-    
-    // Radial correction factor (tune this value experimentally)
-    const double DISTORTION_K = -0.25;  // Start with 0.05, adjust as needed
-    double correction = r * DISTORTION_K;
-    
-    // Apply correction along radial direction
-    //if (r > 0) {
-    if (false) {
-        pixel.x += (dx / r) * correction;  // Use + for barrel distortion
-        pixel.y += (dy / r) * correction;  // Use - for pincushion distortion
-    }
-
-
     return pixel;
 }
 
@@ -80,24 +74,36 @@ size_t AprilTagDetector::detectionCount()
     return num_tags;
 }
 
-std::string AprilTagDetector::JSONOutput()
+std::string AprilTagDetector::JSONOutput(const std::vector<AprilTag>& tags)
 {
     std::stringstream ss;
-    ss << "{ \"count\": " << detected_tags.size() << ", \"tags\": [";
+    ss << "{ \"count\": " << tags.size() << ", \"tags\": [";
 
-    for (size_t i = 0; i < detected_tags.size(); i++) {
+    for (size_t i = 0; i < tags.size(); i++) {
         ss << "{"
-        << "\"id\":"       << detected_tags[i].id << ","
-        << "\"x\":"        << detected_tags[i].x  << ","
-        << "\"y\":"        << detected_tags[i].y  << ","
-        << "\"center_x\":" << detected_tags[i].center_x << ","
-        << "\"center_y\":" << detected_tags[i].center_y << ","
-        << "\"scale\":"  << detected_tags[i].scale << ","
-        << "\"est_z\":"  << detected_tags[i].est_z << "}";
+        << "\"id\":"       << tags[i].id << ","
+        << "\"x\":"        << tags[i].x  << ","
+        << "\"y\":"        << tags[i].y  << ","
+        << "\"center_x\":" << tags[i].center_x << ","
+        << "\"center_y\":" << tags[i].center_y << ","
+        << "\"scale\":"  << tags[i].scale << ","
+        << "\"est_z\":"  << tags[i].est_z << "}";
         
-        if (i < detected_tags.size() - 1) ss << ",";
+        if (i < tags.size() - 1) ss << ",";
     }
 
     ss << "]}";
     return ss.str();
+}
+
+std::string AprilTagDetector::JSONOutputCenter() {
+    return JSONOutput(this->detected_tags);
+}
+
+std::string AprilTagDetector::JSONOutputX() {
+    return JSONOutput(this->detected_tags_x);
+}
+
+std::string AprilTagDetector::JSONOutputY() {
+    return JSONOutput(this->detected_tags_y);
 }

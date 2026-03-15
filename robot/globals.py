@@ -38,8 +38,10 @@ class cameraState:
 @dataclass
 class MQTTState:
     mqtt_broker: str = "127.0.0.1"
-    camera_topic: str = "camera/detections"
+    camera_topic: str = "camera/center_est"
     pencil_topic: str = "pencil/reading"
+    camera_x_topic: str = "camera/x_est"
+    camera_y_topic: str = "camera/y_est"
     port: int = 1883
     client = None
     msg_count: int = 0
