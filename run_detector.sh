@@ -1,5 +1,18 @@
 #!/bin/bash
 
+(
+    # This subshell waits for the "STOP" message
+    mosquitto_sub -h localhost -t "pi/stop" | while read -r payload; do
+        if [ "$payload" == "STOP" ]; then
+            echo "!!! STOP command received via MQTT !!!"
+            # Kill the main detector process and its children
+            pkill -P $$ 
+            exit
+        fi
+    done
+) & 
+LISTENER_PID=$!
+
 # 1. Handle the build directory
 if [ ! -d "build" ]; then
   echo "Creating build directory..."
