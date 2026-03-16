@@ -1,4 +1,5 @@
 from scripts.logger import CSVLogger
+from enum import StrEnum
 from dataclasses import dataclass
 import numpy as np
 from enum import Enum
@@ -19,11 +20,11 @@ class MotionState(Enum):
     FIND_DEPTH = 4
     ASCEND = 5
 
-class ThreePointState(Enum):
-    FIND_CENTER = 0
-    FIND_X = 1
-    FIND_Y = 2
-    IDLE = 4
+class ThreePointState(StrEnum):
+    FIND_CENTER = "camera/center_est"
+    FIND_X = "camera/x_est"
+    FIND_Y = "camera/y_est"
+    IDLE = "camera"
 
 # --- DATACLASSES ---
 @dataclass
@@ -46,8 +47,7 @@ class MQTTState:
     mqtt_broker: str = "127.0.0.1"
     camera_topic: str = "camera/center_est"
     pencil_topic: str = "pencil/reading"
-    camera_x_topic: str = "camera/x_est"
-    camera_y_topic: str = "camera/y_est"
+    pi_topic: str = "pi/stop"
     port: int = 1883
     client = None
     msg_count: int = 0
@@ -140,10 +140,6 @@ correction_logger = CSVLogger(name="diff", log_dir="test_logs")
 camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
 controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
-# --- CONFIGS ---
-subscriber = MQTTState(mqtt_broker=MQTT_WIFI_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
-
 # --- CONTROLLERS ---
 alpha_camera = 0.5
 smooth_dx = 0.0
@@ -159,5 +155,11 @@ class RobotState:
         self.three_point = ThreePointState.IDLE
         self.calibration = CalibrationMode.FOUR_POINT
         self.recorded_points = []
+        self.subscriber = MQTTState(mqtt_broker=MQTT_WIFI_BROKER, camera_topic=self.three_point.value)
+        self.robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
+
+    def set_target(self, target):
+        self.three_point = target
+        self.subscriber.camera_topic = self.three_point.value
 
 global_state = RobotState()

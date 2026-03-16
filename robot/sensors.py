@@ -15,36 +15,28 @@ pencil_offset_y = 0
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
-    client.subscribe(subscriber.camera_topic)
-    client.subscribe(subscriber.pencil_topic)
+    client.subscribe(global_state.subscriber.camera_topic)
+    client.subscribe(global_state.subscriber.pencil_topic)
 
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
-        subscriber.msg_count += 1
-        if msg.topic == subscriber.pencil_topic:
-            if subscriber.mqtt_broker == SIM_MQTT_BROKER:
+        global_state.subscriber.msg_count += 1
+        if msg.topic == global_state.subscriber.pencil_topic:
+            if global_state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receivePencilSim(payload)
             else:
                 receivePencil(payload)
-        else:
-            if msg.topic == subscriber.camera_topic and global_state.three_point == ThreePointState.FIND_CENTER:
-                if subscriber.mqtt_broker == SIM_MQTT_BROKER:
-                    receiveCameraSim(payload)
-                else:
-                    receiveCamera(payload)
-            elif msg.topic == subscriber.camera_x_topic and global_state.three_point == ThreePointState.FIND_X:
-                receiveCamera(payload)
-            elif msg.topic == subscriber.camera_y_topic and global_state.three_point == ThreePointState.FIND_Y:
-                receiveCamera(payload)
+        elif msg.topic == global_state.three_point.value:
+            if global_state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
+                receiveCameraSim(payload)
             else:
-                camera_logger.warning("No camera data being received") 
-
+                receiveCamera(payload)
     except Exception as e:
             print(f"Error processing message on {msg.topic}: {e}")
 
 def connection_status():
-    return subscriber.msg_count > 0
+    return global_state.subscriber.msg_count > 0
 
 def receivePencil(payload):
     data = json.loads(payload)
@@ -54,14 +46,14 @@ def receivePencil(payload):
     pencil_sample.raw = raw
     pencil_sample.distance = distance
     pencil_sample.active = distance >= Z_ACTIVE
-    timestamp = time.perf_counter() - subscriber.start_time
+    timestamp = time.perf_counter() - global_state.subscriber.start_time
     pencil_sample.timestamp = timestamp
 
     pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
-    # print(f"Pencil Distance (mm): {correction.dz:.2f}, Active: {correction.active_dz}")
+    # print(f"Pencil Distance (mm): {correction.dz:.2f}")
 
 def receivePencilSim(payload):
     data = json.loads(payload)
@@ -120,7 +112,7 @@ def receiveCamera(payload):
             cv_z = (statistics.stdev(z_list) / avg_dz) if avg_dz != 0 else 0
             camera_perf_logger.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
-        timestamp = time.perf_counter() - subscriber.start_time
+        timestamp = time.perf_counter() - global_state.subscriber.start_time
         camera_sample.scale = avg_scale # mm / px
         camera_sample.center_x = int(avg_cx)
         camera_sample.center_y = int(avg_cy)
@@ -162,19 +154,20 @@ def receiveCamera(payload):
         camera_logger.warning("No detected tags")
 
 def connect_sensors():
-    subscriber.client = mqtt.Client()
-    subscriber.client.on_connect = on_connect
-    subscriber.client.on_message = on_message
+    global_state.subscriber.client = mqtt.Client()
+    global_state.subscriber.client.on_connect = on_connect
+    global_state.subscriber.client.on_message = on_message
 
-    print(f"Connecting to {subscriber.mqtt_broker}...")
-    subscriber.client.connect(subscriber.mqtt_broker, subscriber.port, 60)
+    print(f"Connecting to {global_state.subscriber.mqtt_broker}...")
+    global_state.subscriber.client.connect(global_state.subscriber.mqtt_broker, global_state.subscriber.port, 60)
 
 def start_sensors():
-    subscriber.client.loop_start()
+    global_state.subscriber.client.loop_start()
 
 def stop_sensors():
-    subscriber.client.loop_stop()
-    subscriber.start_time = time.perf_counter()
+    global_state.subscriber.client.publish(global_state.subscriber.pi_topic, "STOP")
+    global_state.subscriber.client.loop_stop()
+    global_state.subscriber.start_time = time.perf_counter()
 
 if __name__ == "__main__":
     connect_sensors()
