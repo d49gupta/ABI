@@ -51,8 +51,8 @@ if __name__ == "__main__":
                     time.sleep(5)
                 
             correction = sensors.correction_buffer[-1]
-            dx = X_TARGET + correction.dx
-            dy = Y_TARGET - correction.dy
+            dx = X_TARGET + correction.dy
+            dy = Y_TARGET - correction.dx
             dz = Z_TARGET + correction.dz - PENCIL_Z_OFFSET
 
             current_time = time.perf_counter()
