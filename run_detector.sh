@@ -25,6 +25,7 @@ cd build || exit
 if [ "$1" == "three-point" ]; then
     echo "Rebuilding with THREE POINT enabled..."
     cmake -DCMAKE_CXX_FLAGS="-DTHREE_POINT" ..
+    # cmake -DCMAKE_CXX_FLAGS="-DTHREE_POINT -DOLD_TAGS" ..
 else
     echo "Rebuilding with FOUR POINT enabled..."
     cmake -DCMAKE_CXX_FLAGS="" ..
