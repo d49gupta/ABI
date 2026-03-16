@@ -49,7 +49,7 @@ void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* bu
             std::string jsonOutput_y = detector.JSONOutputY();
             publisher.sendMessage("camera/y_est", jsonOutput_y);
         #else
-            std::cout << "Running Standard mode!" << std::endl;
+            std::cout << "Running 4PT mode!" << std::endl;
         #endif
         std::cin.ignore(size / 2); 
     }
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
     Publisher publisher;
     // pass in radius of corner tags, center tag, estimated offset in tag radius units
     // float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset
-    AprilTagDetector detector(22.5, 11.5, 17, 2.375, 4.618);	    
+    AprilTagDetector detector(22.5, 11.5, 2.375);	    
     GT2 pencil(30);
 
     int width = 640;

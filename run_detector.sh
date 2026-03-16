@@ -10,10 +10,10 @@ cd build || exit
 
 # 2. Run CMake and Make
 if [ "$1" == "three-point" ]; then
-    echo "Rebuilding with FEATURE_X enabled..."
+    echo "Rebuilding with THREE POINT enabled..."
     cmake -DCMAKE_CXX_FLAGS="-DTHREE_POINT" ..
 else
-    echo "Rebuilding with Standard mode..."
+    echo "Rebuilding with FOUR POINT enabled..."
     cmake -DCMAKE_CXX_FLAGS="" ..
 fi
 make -j$(nproc)
