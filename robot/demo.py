@@ -3,7 +3,6 @@ import robot.sensors as sensors
 import cv2
 from robot.globals import *
 import time
-import robot.main as main
 
 if __name__ == "__main__":
     print("Connecting to sensors")
@@ -22,10 +21,10 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    main.motion_state = MotionState.FIND_TARGET
+    global_state.motion = MotionState.FIND_TARGET
     try:
         while True:
-            if main.motion_state == MotionState.IDLE:
+            if global_state.motion == MotionState.IDLE:
                 break
 
             if not sensors.connection_status() or not irc5.connection_status():
@@ -46,8 +45,8 @@ if __name__ == "__main__":
                 break
 
             if pencil_buffer and pencil_buffer[-1].active:
-                if main.motion_state != MotionState.FIND_DEPTH:
-                    main.motion_state = MotionState.FIND_DEPTH
+                if global_state.motion != MotionState.FIND_DEPTH:
+                    global_state.motion = MotionState.FIND_DEPTH
                     print("Pencil Detected. Switching to FIND_DEPTH mode.")
                     time.sleep(5)
                 
@@ -67,7 +66,7 @@ if __name__ == "__main__":
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
             dz_diff = irc5.robot_state.pos[2] - Z_TARGET + PENCIL_Z_OFFSET
 
-            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", main.motion_state.value, correction.dx, 
+            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", global_state.motion.value, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
     except KeyboardInterrupt:
