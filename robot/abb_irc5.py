@@ -40,7 +40,7 @@ def read_robot_state():
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
-                robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d", curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
+                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d", global_state.motion.value, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
                                 curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3],
                                 curr_robot_state.conveyor_axis)
         except socket.timeout:

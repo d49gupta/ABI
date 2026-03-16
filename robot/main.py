@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
     last_time = time.perf_counter()
     global_state.motion = MotionState.FIND_INIT_TAGS
-    global_state.three_point = ThreePointState.FIND_CENTER
+    global_state.set_target(ThreePointState.FIND_CENTER)
     try:
         while True:
             if global_state.motion == MotionState.IDLE:

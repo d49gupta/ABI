@@ -27,7 +27,8 @@ def on_message(client, userdata, msg):
                 receivePencilSim(payload)
             else:
                 receivePencil(payload)
-        elif msg.topic == global_state.three_point.value:
+        elif (global_state.calibration == CalibrationMode.FOUR_POINT and msg.topic == ThreePointState.FIND_CENTER.value) or \
+            (global_state.calibration == CalibrationMode.THREE_POINT and msg.topic == global_state.three_point.value):
             if global_state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receiveCameraSim(payload)
             else:
@@ -49,7 +50,7 @@ def receivePencil(payload):
     timestamp = time.perf_counter() - global_state.subscriber.start_time
     pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %.4f, %d", raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %d, %.4f, %d", global_state.motion.value, raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
@@ -110,7 +111,7 @@ def receiveCamera(payload):
             cv_cy = (statistics.stdev(cy_list) / avg_cy) if avg_cy != 0 else 0
             cv_scale = (statistics.stdev(scale_list) / avg_scale) if avg_scale != 0 else 0
             cv_z = (statistics.stdev(z_list) / avg_dz) if avg_dz != 0 else 0
-            camera_perf_logger.info("%d, %.4f, %.4f, %.4f, %.4f", num_tags, cv_cx, cv_cy, cv_scale, cv_z)
+            camera_perf_logger.info("%d, %d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
         timestamp = time.perf_counter() - global_state.subscriber.start_time
         camera_sample.scale = avg_scale # mm / px
@@ -127,8 +128,8 @@ def receiveCamera(payload):
 
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
-        camera_logger.info("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+        camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
+                           global_state.motion.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
