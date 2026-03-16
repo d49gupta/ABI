@@ -22,7 +22,7 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    main.motion_state = MotionState.FIND_CENTER
+    main.motion_state = MotionState.FIND_TARGET
     try:
         while True:
             if main.motion_state == MotionState.IDLE:
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             correction = sensors.correction_buffer[-1]
             dx = X_TARGET + correction.dx
             dy = Y_TARGET - correction.dy
-            dz = Z_TARGET + correction.dz - PENCIL_Z_OFFSET # TODO: NEED to properly account for height diff between TCP and camera
+            dz = Z_TARGET + correction.dz - PENCIL_Z_OFFSET
 
             current_time = time.perf_counter()
             if current_time - last_time < ROBOT_PUBLISH_RATE:

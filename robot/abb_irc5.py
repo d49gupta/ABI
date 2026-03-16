@@ -34,8 +34,8 @@ def read_robot_state():
                 robot_state.pos = np.array(robot_values[0:3])
                 robot_state.orientation = np.array(robot_values[3:7])
 
-                if robot_state.initial_pos is None:
-                    robot_state.initial_pos = robot_state.pos.copy()
+                if robot_config.initial_pos is None:
+                    robot_config.initial_pos = robot_state.pos.copy()
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
@@ -53,9 +53,9 @@ def stop_reading_robot():
     robot_config.read_thread.join(timeout=2.0)
 
 def get_displacement():
-    if robot_state.initial_pos is None or robot_state.pos is None:
+    if robot_config.initial_pos is None or robot_state.pos is None:
         return np.zeros(3)
-    return robot_state.pos - robot_state.initial_pos
+    return robot_state.pos - robot_config.initial_pos
 
 def move_rel_frame(dx, dy, dz):
     global robot_config

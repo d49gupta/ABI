@@ -13,11 +13,17 @@ class CalibrationMode(Enum):
 
 class MotionState(Enum):
     IDLE = 0
-    FIND_CENTER = 1
-    DESCEND = 2
-    FIND_DEPTH = 3
-    ASCEND = 4
-    FIND_INIT_TAGS = 5
+    FIND_INIT_TAGS = 1
+    FIND_TARGET = 2
+    DESCEND = 3
+    FIND_DEPTH = 4
+    ASCEND = 5
+
+class ThreePointState(Enum):
+    FIND_CENTER = 0
+    FIND_X = 1
+    FIND_Y = 2
+    IDLE = 4
 
 # --- DATACLASSES ---
 @dataclass
@@ -59,13 +65,14 @@ class RobotConfig:
     ip_address: str = '127.0.0.1'
     port: int = 4000
     socket = None
-    timeout: float = 20.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
+    timeout: float = 20.0
     connected: bool = False
     msg_count: int = 0
     robot_file = None
     read_thread = None
     stop_trigger = None
     last_time = None
+    initial_pos : np.ndarray = None
 
 @dataclass
 class conveyorState:
@@ -74,10 +81,10 @@ class conveyorState:
 
 @dataclass
 class robotState:
-    initial_pos : np.ndarray = None
     pos : np.ndarray = None
     orientation : np.ndarray = None
     timestamp: int = 0
+    # TODO: Add conveyor state and send from RAPID SIDE too
 
 # --- GLOBALS ---
 MQTT_HOTSPOT_BROKER = "172.20.10.5"
@@ -116,13 +123,12 @@ camera_buffer = deque(maxlen=10)
 correction_buffer = deque(maxlen=10)
 robot_pose_buffer = deque(maxlen=25)
 
-# --- STATES ---
+# --- SAMPLE STATES ---
 correction = CorrectionState()
 pencil_sample = pencilState()
 camera_sample = cameraState()
 robot_state = robotState()
 conveyor_state = conveyorState()
-final_robot_pose = None
 state_last_time = time.perf_counter()
 
 # --- LOGGERS ---
@@ -145,6 +151,12 @@ Kp_camera = 0.075
 Kp_pencil = 0.1
 Kp_ascent = 0.1
 
-# --- RESULTS ---
-four_point_pos = []
-three_point_pos = []
+# --- STATES ---
+class RobotState:
+    def __init__(self):
+        self.motion = MotionState.IDLE
+        self.three_point = ThreePointState.IDLE
+        self.calibration = CalibrationMode.FOUR_POINT
+        self.recorded_points = []
+
+global_state = RobotState()

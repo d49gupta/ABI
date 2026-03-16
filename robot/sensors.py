@@ -27,11 +27,18 @@ def on_message(client, userdata, msg):
                 receivePencilSim(payload)
             else:
                 receivePencil(payload)
-        elif msg.topic == subscriber.camera_topic:
-            if subscriber.mqtt_broker == SIM_MQTT_BROKER:
-                receiveCameraSim(payload)
-            else:
+        else:
+            if msg.topic == subscriber.camera_topic and global_state.three_point == ThreePointState.FIND_CENTER:
+                if subscriber.mqtt_broker == SIM_MQTT_BROKER:
+                    receiveCameraSim(payload)
+                else:
+                    receiveCamera(payload)
+            elif msg.topic == subscriber.camera_x_topic and global_state.three_point == ThreePointState.FIND_X:
                 receiveCamera(payload)
+            elif msg.topic == subscriber.camera_y_topic and global_state.three_point == ThreePointState.FIND_Y:
+                receiveCamera(payload)
+            else:
+                camera_logger.warning("No camera data being received") 
 
     except Exception as e:
             print(f"Error processing message on {msg.topic}: {e}")

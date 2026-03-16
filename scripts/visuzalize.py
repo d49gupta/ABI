@@ -90,7 +90,6 @@ def receivePencil(payload):
     pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
     print(f"Received Pencil reading: {raw} bits")
 
-# TODO: Overlay this with a live compressed video feed
 def receiveCamera(payload):
     """
     Processes AprilTag detection data to update the global canvas. Draws 
