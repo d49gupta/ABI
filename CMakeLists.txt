@@ -8,7 +8,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Wno-reorder -Wno-unused-but-set-variable -Wno-class-memaccess)
 endif()
 
-add_definitions(-DTHREE_POINT)
+
+# add_definitions(-DTHREE_POINT)
 
 find_package(OpenCV REQUIRED)
 find_package(PkgConfig REQUIRED)
