@@ -122,8 +122,8 @@ def receiveCamera(payload):
 
         correction.dy  = (avg_cx - img_center_x) * camera_sample.scale - pencil_offset_x
         correction.dx = (avg_cy - img_center_y) * camera_sample.scale - pencil_offset_y
-        correction.dz = avg_dz
-        # correction.dz = math.sqrt(avg_dz ** 2 - correction.dy ** 2 - correction.dx ** 2) # TODO: need to check if this will work
+        # correction.dz = avg_dz
+        correction.dz = math.sqrt(abs(avg_dz ** 2 - correction.dy ** 2 - correction.dx ** 2))
         correction.timestamp = timestamp
 
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)

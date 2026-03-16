@@ -99,23 +99,23 @@ WINDOW_HEIGHT = 480
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
 
-X_TARGET = 580.761
-Y_TARGET = 14.81
-Z_TARGET = -905.68
+X_TARGET = 532.288
+Y_TARGET = 14.984
+Z_TARGET = -905.674
 Z_THRESH = 8.0
 Z_TARGET_DEPTH = 4.0
 Z_ACTIVE = 1.0
 XY_TARGET_ACC = 1.0
 Z_TARGET_ACC = 0.1
 ASCENT_HEIGHT_DIFF = 5.0
-PENCIL_Z_OFFSET = 60 # mm (165)
+PENCIL_Z_OFFSET = 165 # mm
 ROBOT_PUBLISH_RATE = 0.35 # seconds, should not be faster than camera frequency
 PENCIL_MOVE_RATE = 1.0
 CONVEYOR_MOVE_TIME = 1.5
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
-show = False
+show = True
 show_camera_info = False
 
 # --- BUFFERS ---
@@ -152,7 +152,7 @@ Kp_ascent = 0.1
 class RobotState:
     def __init__(self, mode):
         self.motion = MotionState.IDLE
-        self.three_point = ThreePointState.FIND_CENTER
+        self.three_point = ThreePointState.IDLE
         self.calibration = mode
         self.recorded_points = []
 
@@ -169,3 +169,4 @@ class RobotState:
         self.subscriber.camera_topic = self.three_point.value
 
 global_state = RobotState(CalibrationMode.FOUR_POINT)
+global_state.set_target(ThreePointState.FIND_CENTER)

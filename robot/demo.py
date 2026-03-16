@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
-            dz_diff = irc5.robot_state.pos[2] - Z_TARGET
+            dz_diff = irc5.robot_state.pos[2] - Z_TARGET + PENCIL_Z_OFFSET
 
             correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", main.motion_state.value, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
