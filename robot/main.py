@@ -80,7 +80,10 @@ def find_pencil_depth():
 def ascent():
     global global_state, conveyor_state
 
-    ascent_diff = irc5.robot_config.initial_pos[2] - irc5.robot_state.pos[2]
+    if not robot_pose_buffer:
+        return
+    
+    ascent_diff = irc5.robot_config.initial_pos[2] - irc5.robot_pose_buffer[-1].pos[2]
     # TODO: Change ascent diff to not initial pos but height where you see all 5 tag or always keep it there
 
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
@@ -209,7 +212,7 @@ if __name__ == "__main__":
                 print("Lost connection to sensors or robot.")
                 break
             
-            if not sensors.correction_buffer:
+            if not sensors.correction_buffer and global_state.motion != MotionState.FIND_INIT_TAGS:
                 controller_logger.warning("No correction data available yet.")
                 continue
 

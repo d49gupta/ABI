@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <cmath>
 
-#define FOCAL_LENGTH 292.3 // TODO: Pull from calibration_arducam.yaml
+#define FOCAL_LENGTH 292.3
 struct AprilTag
 {
     int id;

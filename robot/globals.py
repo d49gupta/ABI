@@ -83,11 +83,12 @@ class conveyorState:
 class robotState:
     pos : np.ndarray = None
     orientation : np.ndarray = None
+    conveyor_axis: int = 0
     timestamp: int = 0
-    # TODO: Add conveyor state and send from RAPID SIDE too
 
 # --- GLOBALS ---
 MQTT_HOTSPOT_BROKER = "172.20.10.5"
+MQTT_WIFI_BROKER = "192.168.0.54"
 SIM_MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "10.89.1.194"
 MQTT_ABI_BROKER = "10.89.1.194"
@@ -140,8 +141,8 @@ camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
 controller_logger = CSVLogger(name="controller", log_dir="test_logs")
 
 # --- CONFIGS ---
-subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
-robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
+subscriber = MQTTState(mqtt_broker=MQTT_WIFI_BROKER)
+robot_config = RobotConfig(ip_address=ROBOT_SIM_IP)
 
 # --- CONTROLLERS ---
 alpha_camera = 0.5

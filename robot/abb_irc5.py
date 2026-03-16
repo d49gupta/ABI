@@ -33,14 +33,16 @@ def read_robot_state():
                 robot_values = [float(val) for val in line.strip().split(',')]
                 robot_state.pos = np.array(robot_values[0:3])
                 robot_state.orientation = np.array(robot_values[3:7])
+                robot_state.conveyor_axis = robot_values[7]
 
                 if robot_config.initial_pos is None:
                     robot_config.initial_pos = robot_state.pos.copy()
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
-                robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
-                                curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3])
+                robot_logger.info("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d", curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
+                                curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3],
+                                curr_robot_state.conveyor_axis)
         except socket.timeout:
             robot_logger.warning("Timeout: No data received from robot.")
             print("Timeout: No data received from robot.")
@@ -103,9 +105,6 @@ if __name__ == "__main__":
         while True:
             move_rel_frame(0, -5, 0)
             # print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
-            # run_conveyor()
-            # time.sleep(5)
-            # stop_conveyor()
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:
