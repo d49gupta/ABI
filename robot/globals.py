@@ -179,5 +179,5 @@ class RobotState:
         self.three_point = target
         self.subscriber.camera_topic = self.three_point.value
 
-global_state = RobotState(CalibrationMode.THREE_POINT)
+global_state = RobotState(CalibrationMode.FOUR_POINT)
 # global_state.set_target(ThreePointState.FIND_CENTER)

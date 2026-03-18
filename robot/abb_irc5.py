@@ -33,7 +33,7 @@ def read_robot_state():
                 robot_values = [float(val) for val in line.strip().split(',')]
                 robot_state.pos = np.array(robot_values[0:3])
                 robot_state.orientation = np.array(robot_values[3:7])
-                robot_state.conveyor_axis = robot_values[7]
+                robot_state.conveyor_axis = 0
 
                 if global_state.robot_config.initial_pos is None:
                     global_state.robot_config.initial_pos = robot_state.pos.copy()
