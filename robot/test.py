@@ -28,8 +28,11 @@ if __name__ == "__main__":
             if show:
                 with canvas_lock:
                     cv2.imshow("AprilTag Real-Time Map", sensors.canvas)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
                 break
+            elif key == 13:  # 13 is the ASCII code for the Enter key
+                global_state.set_target(ThreePointState.FIND_X)
 
     except KeyboardInterrupt:
         print("Shutting down...")

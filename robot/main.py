@@ -106,9 +106,11 @@ def ascent():
             if global_state.three_point == ThreePointState.FIND_CENTER:
                 global_state.set_target(ThreePointState.FIND_X)
                 print("FINDING X TARGET")
+                time.sleep(1.0)
             elif global_state.three_point == ThreePointState.FIND_X:
                 global_state.set_target(ThreePointState.FIND_Y)
                 print("FINDING Y TARGET")
+                time.sleep(1.0)
             else:
                 global_state.set_target(ThreePointState.IDLE)
                 global_state.motion = MotionState.IDLE

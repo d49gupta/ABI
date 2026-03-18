@@ -16,7 +16,9 @@ pencil_offset_y = 0
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
-    client.subscribe(state.subscriber.camera_topic)
+    client.subscribe(ThreePointState.FIND_CENTER.value)
+    client.subscribe(ThreePointState.FIND_X.value)
+    client.subscribe(ThreePointState.FIND_Y.value)
     client.subscribe(state.subscriber.pencil_topic)
 
 def on_message(client, userdata, msg):
