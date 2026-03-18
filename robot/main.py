@@ -93,6 +93,8 @@ def ascent():
             if len(global_state.recorded_points) >= 4:
                 print("Four Point Calibration Complete")
                 global_state.set_target(ThreePointState.FIND_X)
+                global_state.motion = MotionState.FIND_TARGET
+
                 print("FINDING X TARGET")
                 time.sleep(1.0)                
                 print(global_state.recorded_points)
