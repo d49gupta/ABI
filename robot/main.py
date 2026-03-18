@@ -3,10 +3,6 @@ from robot.globals import *
 import time
 import cv2
 
-def update_state(value):
-    import robot.globals as gl
-    gl.global_state.set_target(value)
-
 def move_xy_sensors():
     global global_state, conveyor_state
 
@@ -108,10 +104,10 @@ def ascent():
         elif global_state.calibration.value == CalibrationMode.THREE_POINT.value:
             global_state.motion = MotionState.FIND_TARGET
             if global_state.three_point == ThreePointState.FIND_CENTER:
-                update_state(ThreePointState.FIND_X)
+                global_state.set_target(ThreePointState.FIND_X)
                 print("FINDING X TARGET")
             elif global_state.three_point == ThreePointState.FIND_X:
-                update_state(ThreePointState.FIND_Y)
+                global_state.set_target(ThreePointState.FIND_Y)
                 print("FINDING Y TARGET")
             else:
                 global_state.set_target(ThreePointState.IDLE)
@@ -207,7 +203,6 @@ if __name__ == "__main__":
 
     last_time = time.perf_counter()
     global_state.motion = MotionState.FIND_TARGET
-    update_state(ThreePointState.FIND_CENTER)
     try:
         while True:
             if global_state.motion == MotionState.IDLE:
