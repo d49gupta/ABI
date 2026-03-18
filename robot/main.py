@@ -204,7 +204,7 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    global_state.motion = MotionState.FIND_TARGET
+    global_state.motion = MotionState.FIND_INIT_TAGS
     try:
         while True:
             if global_state.motion == MotionState.IDLE:
