@@ -1,11 +1,10 @@
 import robot.abb_irc5 as irc5
 from robot.globals import *
-from robot.globals import global_state
+# from robot.globals import global_state
 import time
 import cv2
 
 if __name__ == "__main__":
-    global_state = RobotState(CalibrationMode.THREE_POINT)
     global_state.motion = MotionState.FIND_TARGET
     global_state.set_target(ThreePointState.FIND_CENTER)
 

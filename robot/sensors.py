@@ -23,7 +23,6 @@ def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
         state.subscriber.msg_count += 1
-        print(state.calibration, state.subscriber.camera_topic, msg.topic)
         
         if msg.topic == state.subscriber.pencil_topic:
             if state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
@@ -32,7 +31,6 @@ def on_message(client, userdata, msg):
                 receivePencil(payload)
         elif (state.calibration == CalibrationMode.FOUR_POINT and msg.topic == ThreePointState.FIND_CENTER.value) or \
             (state.calibration == CalibrationMode.THREE_POINT and msg.topic == state.subscriber.camera_topic): 
-            print("DSAJDHASDHAS")
             if state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receiveCameraSim(payload)
             else:

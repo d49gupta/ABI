@@ -1,7 +1,5 @@
 import robot.abb_irc5 as irc5
-import robot.sensors as sensors
 from robot.globals import *
-
 import time
 import cv2
 
@@ -186,6 +184,10 @@ def find_init_tags():
 
 
 if __name__ == "__main__":
+    global_state.motion = MotionState.FIND_TARGET
+    global_state.set_target(ThreePointState.FIND_CENTER)
+
+    import robot.sensors as sensors
     print("Connecting to sensors")
     sensors.connect_sensors()
     sensors.start_sensors()
