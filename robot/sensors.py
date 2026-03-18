@@ -6,6 +6,7 @@ import statistics
 from robot.globals import *
 from dataclasses import replace
 import math
+from robot.test import global_state as state
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
@@ -15,21 +16,24 @@ pencil_offset_y = 0
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to Pi with result code {rc}")
-    client.subscribe(global_state.subscriber.camera_topic)
-    client.subscribe(global_state.subscriber.pencil_topic)
+    client.subscribe(state.subscriber.camera_topic)
+    client.subscribe(state.subscriber.pencil_topic)
 
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
-        global_state.subscriber.msg_count += 1
-        if msg.topic == global_state.subscriber.pencil_topic:
-            if global_state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
+        state.subscriber.msg_count += 1
+        print(state.calibration, state.subscriber.camera_topic, msg.topic)
+        
+        if msg.topic == state.subscriber.pencil_topic:
+            if state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receivePencilSim(payload)
             else:
                 receivePencil(payload)
-        elif (global_state.calibration == CalibrationMode.FOUR_POINT and msg.topic == ThreePointState.FIND_CENTER.value) or \
-            (global_state.calibration == CalibrationMode.THREE_POINT and msg.topic == global_state.three_point.value):
-            if global_state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
+        elif (state.calibration == CalibrationMode.FOUR_POINT and msg.topic == ThreePointState.FIND_CENTER.value) or \
+            (state.calibration == CalibrationMode.THREE_POINT and msg.topic == state.subscriber.camera_topic): 
+            print("DSAJDHASDHAS")
+            if state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receiveCameraSim(payload)
             else:
                 receiveCamera(payload)
@@ -37,7 +41,7 @@ def on_message(client, userdata, msg):
             print(f"Error processing message on {msg.topic}: {e}")
 
 def connection_status():
-    return global_state.subscriber.msg_count > 0
+    return state.subscriber.msg_count > 0
 
 def receivePencil(payload):
     data = json.loads(payload)
@@ -47,10 +51,10 @@ def receivePencil(payload):
     pencil_sample.raw = raw
     pencil_sample.distance = distance
     pencil_sample.active = distance >= Z_ACTIVE
-    timestamp = time.perf_counter() - global_state.subscriber.start_time
+    timestamp = time.perf_counter() - state.subscriber.start_time
     pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %d, %.4f, %d", global_state.motion.value, raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %d, %.4f, %d", state.motion.value, raw, distance, pencil_sample.active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 
@@ -111,9 +115,9 @@ def receiveCamera(payload):
             cv_cy = (statistics.stdev(cy_list) / avg_cy) if avg_cy != 0 else 0
             cv_scale = (statistics.stdev(scale_list) / avg_scale) if avg_scale != 0 else 0
             cv_z = (statistics.stdev(z_list) / avg_dz) if avg_dz != 0 else 0
-            camera_perf_logger.info("%d, %d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, num_tags, cv_cx, cv_cy, cv_scale, cv_z)
+            camera_perf_logger.info("%d, %d, %.4f, %.4f, %.4f, %.4f", state.motion.value, num_tags, cv_cx, cv_cy, cv_scale, cv_z)
         
-        timestamp = time.perf_counter() - global_state.subscriber.start_time
+        timestamp = time.perf_counter() - state.subscriber.start_time
         camera_sample.scale = avg_scale # mm / px
         camera_sample.center_x = int(avg_cx)
         camera_sample.center_y = int(avg_cy)
@@ -129,7 +133,7 @@ def receiveCamera(payload):
         projected_x = int(int(WINDOW_WIDTH / 2) + pencil_offset_x / avg_scale)
         projected_y = int(int(WINDOW_HEIGHT / 2) + pencil_offset_y / avg_scale)
         camera_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", 
-                           global_state.motion.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
+                           state.motion.value, avg_cx, avg_cy, avg_scale, correction.dx, correction.dy, correction.dz)
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
@@ -155,20 +159,20 @@ def receiveCamera(payload):
         camera_logger.warning("No detected tags")
 
 def connect_sensors():
-    global_state.subscriber.client = mqtt.Client()
-    global_state.subscriber.client.on_connect = on_connect
-    global_state.subscriber.client.on_message = on_message
+    state.subscriber.client = mqtt.Client()
+    state.subscriber.client.on_connect = on_connect
+    state.subscriber.client.on_message = on_message
 
-    print(f"Connecting to {global_state.subscriber.mqtt_broker}...")
-    global_state.subscriber.client.connect(global_state.subscriber.mqtt_broker, global_state.subscriber.port, 60)
+    print(f"Connecting to {state.subscriber.mqtt_broker}...")
+    state.subscriber.client.connect(state.subscriber.mqtt_broker, state.subscriber.port, 60)
 
 def start_sensors():
-    global_state.subscriber.client.loop_start()
+    state.subscriber.client.loop_start()
 
 def stop_sensors():
-    global_state.subscriber.client.publish(global_state.subscriber.pi_topic, "STOP")
-    global_state.subscriber.client.loop_stop()
-    global_state.subscriber.start_time = time.perf_counter()
+    # state.subscriber.client.publish(state.subscriber.pi_topic, "STOP")
+    state.subscriber.client.loop_stop()
+    state.subscriber.start_time = time.perf_counter()
 
 if __name__ == "__main__":
     connect_sensors()

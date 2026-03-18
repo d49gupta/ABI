@@ -4,6 +4,10 @@ from robot.globals import *
 import time
 import cv2
 
+def update_state(value):
+    import robot.globals as gl
+    gl.global_state.set_target(value)
+
 def move_xy_sensors():
     global global_state, conveyor_state
 
@@ -25,7 +29,7 @@ def move_xy_sensors():
             conveyor_state.running = False
             conveyor_state.last_time = None
 
-    if not conveyor_state.running:
+    if not conveyor_state.running and global_state.calibration == CalibrationMode.FOUR_POINT:
             irc5.stop_conveyor()
 
     if magnitude > XY_TARGET_ACC or conveyor_state.running:
@@ -105,10 +109,10 @@ def ascent():
         elif global_state.calibration.value == CalibrationMode.THREE_POINT.value:
             global_state.motion = MotionState.FIND_TARGET
             if global_state.three_point == ThreePointState.FIND_CENTER:
-                global_state.set_target(ThreePointState.FIND_X)
+                update_state(ThreePointState.FIND_X)
                 print("FINDING X TARGET")
             elif global_state.three_point == ThreePointState.FIND_X:
-                global_state.set_target(ThreePointState.FIND_Y)
+                update_state(ThreePointState.FIND_Y)
                 print("FINDING Y TARGET")
             else:
                 global_state.set_target(ThreePointState.IDLE)
@@ -123,9 +127,7 @@ def state_machine():
     current_time = time.perf_counter()
     time_interval = current_time - state_last_time
 
-    if global_state.motion == MotionState.FIND_INIT_TAGS:
-        find_init_tags()
-    elif global_state.motion == MotionState.FIND_TARGET:
+    if global_state.motion == MotionState.FIND_TARGET:
         move_xy_sensors()
     elif global_state.motion == MotionState.DESCEND:
         move_xyz_sensors()
@@ -201,8 +203,8 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    global_state.motion = MotionState.FIND_INIT_TAGS
-    global_state.set_target(ThreePointState.FIND_CENTER)
+    global_state.motion = MotionState.FIND_TARGET
+    update_state(ThreePointState.FIND_CENTER)
     try:
         while True:
             if global_state.motion == MotionState.IDLE:
@@ -211,6 +213,9 @@ if __name__ == "__main__":
             if not sensors.connection_status() or not irc5.connection_status():
                 print("Lost connection to sensors or robot.")
                 break
+            
+            if global_state.motion == MotionState.FIND_INIT_TAGS:
+                find_init_tags()
             
             if not sensors.correction_buffer and global_state.motion != MotionState.FIND_INIT_TAGS:
                 controller_logger.warning("No correction data available yet.")

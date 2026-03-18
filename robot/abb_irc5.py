@@ -93,6 +93,10 @@ def record_target():
     command = f"7"
     global_state.robot_config.socket.sendall(command.encode('utf-8'))
 
+def move_robot_home():
+    command = f"5"
+    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+
 def disconnect_robot():
     global_state.robot_config.socket.close()
 
@@ -102,6 +106,7 @@ if __name__ == "__main__":
     time.sleep(2)  # Wait for connection to establish
 
     try:
+        run_conveyor()
         while True:
             move_rel_frame(10, 0, 0)
             print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
@@ -109,5 +114,6 @@ if __name__ == "__main__":
         print("Shutting down...")
     finally:
         print("Disconnecting from robot...")
+        stop_conveyor()
         stop_reading_robot()
         disconnect_robot()
