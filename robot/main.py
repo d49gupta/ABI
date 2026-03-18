@@ -92,7 +92,13 @@ def ascent():
         if global_state.calibration.value == CalibrationMode.FOUR_POINT.value:
             if len(global_state.recorded_points) >= 4:
                 print("Four Point Calibration Complete")
-                global_state.motion = MotionState.IDLE
+
+                # global_state.motion = MotionState.IDLE
+
+                global_state.calibration = CalibrationMode.THREE_POINT
+                global_state.set_target(ThreePointState.FIND_X)
+                global_state.motion = MotionState.FIND_TARGET
+
                 print(global_state.recorded_points)
             else:
                 print("Running the Conveyor")
@@ -102,13 +108,14 @@ def ascent():
                 global_state.motion = MotionState.FIND_TARGET
 
         elif global_state.calibration.value == CalibrationMode.THREE_POINT.value:
-            global_state.motion = MotionState.FIND_TARGET
-            if global_state.three_point == ThreePointState.FIND_CENTER:
-                global_state.set_target(ThreePointState.FIND_X)
-                print("FINDING X TARGET")
-                time.sleep(1.0)
-            elif global_state.three_point == ThreePointState.FIND_X:
+            # global_state.motion = MotionState.FIND_TARGET
+            # if global_state.three_point == ThreePointState.FIND_CENTER:
+            #     global_state.set_target(ThreePointState.FIND_X)
+            #     print("FINDING X TARGET")
+            #     time.sleep(1.0)
+            if global_state.three_point == ThreePointState.FIND_X:
                 global_state.set_target(ThreePointState.FIND_Y)
+                global_state.motion = MotionState.FIND_TARGET
                 print("FINDING Y TARGET")
                 time.sleep(1.0)
             else:
