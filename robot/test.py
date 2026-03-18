@@ -1,6 +1,6 @@
 import robot.abb_irc5 as irc5
 from robot.globals import *
-from robot.state import RobotState
+from robot.globals import global_state
 import time
 import cv2
 

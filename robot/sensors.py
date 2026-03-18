@@ -6,7 +6,7 @@ import statistics
 from robot.globals import *
 from dataclasses import replace
 import math
-from robot.test import global_state as state
+from robot.globals import global_state as state
 
 # Define offset in mm 
 # Dont even need offset, just set target of pencil constant offset from center of camera target
