@@ -166,7 +166,7 @@ def start_sensors():
     global_state.subscriber.client.loop_start()
 
 def stop_sensors():
-    global_state.subscriber.client.publish(global_state.subscriber.pi_topic, "STOP")
+    # global_state.subscriber.client.publish(global_state.subscriber.pi_topic, "STOP")
     global_state.subscriber.client.loop_stop()
     global_state.subscriber.start_time = time.perf_counter()
 
