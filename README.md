@@ -69,6 +69,8 @@ python -m scripts.plotter
 └── Python (Runs on Host Machine)
     ├── visualize.py          # MQTT subscriber + live AprilTag canvas
     ├── calibration.py        # Camera intrinsic calibration via chessboard
+    ├── egm_test.py           # EGM UDP loop — sends real-time Z corrections to ABB
+    ├── egm_pb2.py            # Auto-generated Protobuf definitions for EGM messages
     ├── plotter.py            # Live matplotlib plot of camera + pencil state
     ├── logger.py             # CSV logging utility
     ├── 3dplot.py             # 3D SVD line-of-best-fit visualizer for calibration points
