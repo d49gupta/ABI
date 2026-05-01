@@ -27,12 +27,12 @@ Perform these steps to start the vision detection system:
     *   Ping the device to find the IP: `ping sourdough.local`
     *   If no response, wait a few seconds or power cycle the device.
 3.  **Establish SSH Session:**
-    execute:
-        ```bash
-        ssh sourdough@<RASPBERRY-PI IP-ADDRESS>
-        sourdough 
-        ```
-        *Note: sourdough is the password for the ssh.*
+execute:
+    ```bash
+    ssh sourdough@<RASPBERRY-PI IP-ADDRESS>
+    sourdough 
+    ```
+    *Note: sourdough is the password for the ssh.*
     
 #### 3. Running Calibration
 *   **Routine Selection:** Set the program pointer on the controller to the `Calibrate` routine.
