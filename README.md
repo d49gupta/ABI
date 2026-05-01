@@ -27,18 +27,12 @@ Perform these steps to start the vision detection system:
     *   Ping the device to find the IP: `ping sourdough.local`
     *   If no response, wait a few seconds or power cycle the device.
 3.  **Establish SSH Session:**
-execute:
-    ```bash
-    ssh sourdough@<RASPBERRY-PI IP-ADDRESS>
-    sourdough 
-    ```
-    *Note: sourdough is the password for the ssh.*
-4. **Begin Polling**
-execute:
-    ```bash
-    cd ABI
-    ./run_detector.sh
-    ```
+    execute:
+        ```bash
+        ssh sourdough@<RASPBERRY-PI IP-ADDRESS>
+        sourdough 
+        ```
+        *Note: sourdough is the password for the ssh.*
     
 #### 3. Running Calibration
 *   **Routine Selection:** Set the program pointer on the controller to the `Calibrate` routine.
@@ -50,11 +44,15 @@ execute:
     *This will launch the visualizer and start the conveyor until an AprilTag is detected.*
 
 #### 4. Live Pose Plots (Optional)
-To view live plots of the robot's pose during the calibration process, open a new terminal on the cell computer and execute:
-```bash
-cd ABI
-python -m scripts.plotter
-```
+To view live plots of the robot's pose during the calibration process:
+
+Open a new terminal on the cell computer.
+execute:
+    ```bash
+    cd ABI
+    python -m scripts.plotter
+    ```
+
 ---
 
 ## Repository Structure
@@ -69,8 +67,6 @@ python -m scripts.plotter
 └── Python (Runs on Host Machine)
     ├── visualize.py          # MQTT subscriber + live AprilTag canvas
     ├── calibration.py        # Camera intrinsic calibration via chessboard
-    ├── egm_test.py           # EGM UDP loop — sends real-time Z corrections to ABB
-    ├── egm_pb2.py            # Auto-generated Protobuf definitions for EGM messages
     ├── plotter.py            # Live matplotlib plot of camera + pencil state
     ├── logger.py             # CSV logging utility
     ├── 3dplot.py             # 3D SVD line-of-best-fit visualizer for calibration points
