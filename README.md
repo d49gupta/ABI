@@ -4,6 +4,57 @@ This project runs on a Raspberry Pi 5 mounted to a custom end-effector attached 
 
 ---
 
+## Useage
+
+### 4-Point Calibration Procedure
+
+Follow these steps to perform the automated 4-point calibration for the robotic arm.
+
+---
+
+#### 1. Controller & Hardware Preparation
+*   **Module Verification:** Ensure the `socket_cntrl.mod` file is loaded onto the robot controller.
+*   **Operating Mode:** Set the robot controller to **Manual Mode**.
+*   **Initial Positioning:** Move the robot arm to the **Home J** position.
+*   **Plate Setup:** Place the Calibration Plate on the end of the conveyor, centered as much as possible. 
+    > **Note:** The end-effector camera must be able to see at least one AprilTag to initiate the sequence.
+
+#### 2. Raspberry Pi Configuration (via SSH)
+Perform these steps to start the vision detection system:
+
+1.  **Hardware Check:** Ensure the end-effector is powered on. Wait for the Raspberry Pi status LED to turn **solid green**.
+2.  **Network Connection:** 
+    *   Ping the device to find the IP: `ping sourdough.local`
+    *   If no response, wait a few seconds or power cycle the device.
+3.  **Establish SSH Session:**
+    execute:
+        ```bash
+        ssh sourdough@<RASPBERRY-PI IP-ADDRESS>
+        sourdough 
+        ```
+        *Note: sourdough is the password for the ssh.*
+    
+#### 3. Running Calibration
+*   **Routine Selection:** Set the program pointer on the controller to the `Calibrate` routine.
+*   **Launch Control Script:** On the cell computer, open a terminal and execute:
+    ```bash
+    cd ABI
+    python -m robot.main
+    ```
+    *This will launch the visualizer and start the conveyor until an AprilTag is detected.*
+
+#### 4. Live Pose Plots (Optional)
+To view live plots of the robot's pose during the calibration process:
+
+Open a new terminal on the cell computer.
+execute:
+    ```bash
+    cd ABI
+    python -m scripts.plotter
+    ```
+
+---
+
 ## Repository Structure
 
 ```
@@ -16,8 +67,6 @@ This project runs on a Raspberry Pi 5 mounted to a custom end-effector attached 
 └── Python (Runs on Host Machine)
     ├── visualize.py          # MQTT subscriber + live AprilTag canvas
     ├── calibration.py        # Camera intrinsic calibration via chessboard
-    ├── egm_test.py           # EGM UDP loop — sends real-time Z corrections to ABB
-    ├── egm_pb2.py            # Auto-generated Protobuf definitions for EGM messages
     ├── plotter.py            # Live matplotlib plot of camera + pencil state
     ├── logger.py             # CSV logging utility
     ├── 3dplot.py             # 3D SVD line-of-best-fit visualizer for calibration points
