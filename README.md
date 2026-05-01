@@ -33,6 +33,12 @@ execute:
     sourdough 
     ```
     *Note: sourdough is the password for the ssh.*
+4. **Begin Polling**
+execute:
+    ```bash
+    cd ABI
+    ./run_detector.sh
+    ```
     
 #### 3. Running Calibration
 *   **Routine Selection:** Set the program pointer on the controller to the `Calibrate` routine.
