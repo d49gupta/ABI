@@ -44,15 +44,11 @@ execute:
     *This will launch the visualizer and start the conveyor until an AprilTag is detected.*
 
 #### 4. Live Pose Plots (Optional)
-To view live plots of the robot's pose during the calibration process:
-
-Open a new terminal on the cell computer.
-execute:
-    ```bash
-    cd ABI
-    python -m scripts.plotter
-    ```
-
+To view live plots of the robot's pose during the calibration process, open a new terminal on the cell computer and execute:
+```bash
+cd ABI
+python -m scripts.plotter
+```
 ---
 
 ## Repository Structure
