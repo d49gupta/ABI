@@ -81,7 +81,7 @@ class robotState:
 MQTT_HOTSPOT_BROKER = "172.20.10.5"
 SIM_MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "10.89.1.194"
-MQTT_ABI_BROKER = "10.89.1.194"
+MQTT_ABI_BROKER = "10.89.1.159"
 ROBOT_SIM_IP = "127.0.0.1"
 ROBOT_REAL_IP = "10.60.70.51"
 WINDOW_WIDTH = 640
@@ -105,7 +105,7 @@ CONVEYOR_MOVE_TIME = 1.5
 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
-show = False
+show = True
 show_camera_info = False
 
 # --- BUFFERS ---
