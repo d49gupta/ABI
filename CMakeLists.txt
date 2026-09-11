@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(ABI)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -16,6 +16,7 @@ find_package(OpenCV REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 
+pkg_check_modules(GPIODCXX REQUIRED libgpiodcxx)
 pkg_check_modules(APRILTAG REQUIRED apriltag)
 pkg_check_modules(MOSQUITTO REQUIRED libmosquitto)
 
@@ -24,6 +25,7 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
   ${APRILTAG_INCLUDE_DIRS}
   ${MOSQUITTO_INCLUDE_DIRS}
+  ${GPIODCXX_INCLUDE_DIRS}
 )
 
 file(GLOB SRCS "src/*.cpp")
@@ -33,6 +35,7 @@ target_link_libraries(tag_detector
   ${OpenCV_LIBS}
   ${APRILTAG_LIBRARIES}
   ${MOSQUITTO_LIBRARIES}
+  ${GPIODCXX_LIBRARIES}
   pthread 
 )
 

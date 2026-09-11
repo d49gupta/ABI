@@ -10,7 +10,8 @@
 #include <unordered_map>
 #include <cmath>
 
-#define FOCAL_LENGTH 292.3
+#define FOCAL_LENGTH 794.00009069874466 // TODO: Pull from scripts/calibration_pi.yaml
+
 struct AprilTag
 {
     int id;

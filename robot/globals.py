@@ -65,7 +65,7 @@ class RobotConfig:
     ip_address: str = '127.0.0.1'
     port: int = 4000
     socket = None
-    timeout: float = 20.0
+    timeout: float = 20.0 # adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
     msg_count: int = 0
     robot_file = None
@@ -91,7 +91,7 @@ MQTT_HOTSPOT_BROKER = "172.20.10.5"
 MQTT_WIFI_BROKER = "192.168.0.54"
 SIM_MQTT_BROKER = "127.0.0.1"
 MQTT_BROKER = "10.89.1.194"
-MQTT_ABI_BROKER = "10.89.1.194"
+MQTT_ABI_BROKER = "10.89.1.159"
 ROBOT_SIM_IP = "127.0.0.1"
 ROBOT_REAL_IP = "10.60.70.51"
 WINDOW_WIDTH = 640

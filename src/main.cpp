@@ -1,6 +1,7 @@
 #include "april_tags.hpp"
 #include "mqtt.hpp"
 #include "pencil.hpp"
+#include "binary_pencil.hpp"
 #include <thread>
 #include <atomic>
 #include <chrono>
@@ -10,8 +11,7 @@
 
 std::atomic<bool> keepRunning(true);
 
-// Gracefully signals all threads and loops to stop when Ctrl + C
-void signalHandler(int signum)
+void signalHandler(int) 
 {
     std::cout << "\n[System] CTRL+C detected. Shutting down threads..." << std::endl;
     keepRunning = false;
@@ -29,11 +29,19 @@ void runPencilThread(GT2* pencil, Publisher* publisher)
     }
 }
 
-// Spawns the pencil thread, then continuously reads raw greyscale images from stdin
-// Wraps each frame into image_u8_t struct, runs AprilTag detection, serialized results to JSON and publishes to camera/detections
-void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* buffer, int size, int width, int height, GT2& pencil) 
+void runBinaryPencilThread(P10DLB* binaryPencil, Publisher* publisher) 
 {
-    std::thread pThread(runPencilThread, &pencil, &publisher);
+    while (keepRunning) 
+    {
+        std::string jsonOutput = binaryPencil->JSONOutput();
+        publisher->sendMessage("binary_pencil/reading", jsonOutput);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* buffer, int size, int width, int height, P10DLB& binaryPencil) 
+{
+    std::thread bpThread(runBinaryPencilThread, &binaryPencil, &publisher);
     while (keepRunning && std::cin.read((char*)buffer, size)) 
     {
 	    std::cout<<"Reading Camera Frames"<<std::endl;
@@ -55,13 +63,11 @@ void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* bu
     }
 
     keepRunning = false;
-    if (pThread.joinable())
-        pThread.join();
+    if (bpThread.joinable())
+        bpThread.join();
 }
 
-// Sets up the signal handler, instatiates the Publisher, AprilTagDetector (set sizes), and GTS pencil sensor
-// Launches runCameraLoop
-int main(int argc, char** argv) 
+int main() 
 {
     std::signal(SIGINT, signalHandler);
 
@@ -69,7 +75,7 @@ int main(int argc, char** argv)
     // pass in radius of corner tags, center tag, estimated offset in tag radius units
     // float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset
     AprilTagDetector detector(22.5, 11.5, 2.375);	    
-    GT2 pencil(30);
+    P10DLB binaryPencil;
 
     int width = 640;
     int height = 480;
@@ -77,7 +83,7 @@ int main(int argc, char** argv)
     std::vector<uint8_t> buffer(size);
 
     try {
-        runCameraLoop(detector, publisher, buffer.data(), size, width, height, pencil);
+        runCameraLoop(detector, publisher, buffer.data(), size, width, height, binaryPencil);
     } catch (const std::exception& e) {
         std::cerr << "Runtime Error: " << e.what() << std::endl;
     }
