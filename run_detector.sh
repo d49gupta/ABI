@@ -1,5 +1,18 @@
 #!/bin/bash
 
+(
+    # This subshell waits for the "STOP" message
+    mosquitto_sub -h localhost -t "pi/stop" | while read -r payload; do
+        if [ "$payload" == "STOP" ]; then
+            echo "!!! STOP command received via MQTT !!!"
+            # Kill the main detector process and its children
+            pkill -P $$ 
+            exit
+        fi
+    done
+) & 
+LISTENER_PID=$!
+
 # 1. Handle the build directory
 if [ ! -d "build" ]; then
   echo "Creating build directory..."
@@ -9,8 +22,14 @@ fi
 cd build || exit
 
 # 2. Run CMake and Make
-# Assuming you use CMake; if just a Makefile, remove the cmake line
-cmake ..
+if [ "$1" == "three-point" ]; then
+    echo "Rebuilding with THREE POINT enabled..."
+    cmake -DCMAKE_CXX_FLAGS="-DTHREE_POINT" ..
+    # cmake -DCMAKE_CXX_FLAGS="-DTHREE_POINT -DOLD_TAGS" ..
+else
+    echo "Rebuilding with FOUR POINT enabled..."
+    cmake -DCMAKE_CXX_FLAGS="" ..
+fi
 make -j$(nproc)
 
 # 3. Check if build was successful before running

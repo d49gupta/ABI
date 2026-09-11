@@ -28,10 +28,10 @@ MODULE socket_comms
     [[348.793,-20.0385,-539.401],[0.00235769,0.965603,0.259838,0.00950471],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14803.3]]
     ];
     
-    PERS robtarget Point1 := [[279.488,-19.312,-538.991],[0.000143494,0.965922,0.258832,-0.00011993],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14724.8]];
-    PERS robtarget Point2 := [[301.416,-19.7475,-539.054],[0.000945091,0.96583,0.259157,0.00313846],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14750.8]];
-    PERS robtarget Point3 := [[324.189,-19.8434,-539.222],[0.00163557,0.965729,0.259473,0.00622472],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14776.2]];
-    PERS robtarget Point4 := [[348.793,-30.0385,-589.401],[0.00235769,0.965603,0.259838,0.00950471],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14803.3]];
+    PERS robtarget Point1 := [[344.783,-17.973,-539.875],[0.00246905,0.965822,0.259055,0.00849908],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point2 := [[366.811,-18.3668,-540.218],[0.0032326,0.965652,0.259559,0.0116495],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,22.4772]];
+    PERS robtarget Point3 := [[389.258,-18.5014,-540.432],[0.00400952,0.965462,0.260091,0.014847],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,44.8005]];
+    PERS robtarget Point4 := [[412.395,-18.5168,-540.671],[0.00474478,0.965308,0.260472,0.0176558],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,67.5856]];
     
     
     PERS robtarget Point1_test := [[279.488,-19.312,-538.991],[0.000143494,0.965922,0.258832,-0.00011993],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,14724.8]];
@@ -57,7 +57,8 @@ MODULE socket_comms
                     ValToStr(current_pose.rot.q1) + "," + 
                     ValToStr(current_pose.rot.q2) + "," + 
                     ValToStr(current_pose.rot.q3) + "," +
-                    ValToStr(current_pose.rot.q4);
+                    ValToStr(current_pose.rot.q4) + "," +
+                    ValToStr(current_pose.extax.eax_f);
         send_msg := pose_msg + "\0A";
         SocketSend client_socket \Str:=send_msg;
     ENDPROC
@@ -85,6 +86,8 @@ MODULE socket_comms
                 target_pose.trans.y := move_data.y;
                 target_pose.trans.z := move_data.z;
                 MOVE_BODY;
+            CASE 5:
+                GoHomeJ; ! Check on-site if GoHomeJ is defined
             CASE 8:
                 MOVE_CONVEYOR;
             CASE 9:
@@ -127,14 +130,14 @@ MODULE socket_comms
     ENDPROC
     
     PROC Calibrate()
-       openSocket;
-        
+        openSocket;
         WHILE TRUE DO
             Send;
             Receive;
        ENDWHILE
         
-        !closeSocket;
+        closeSocket;
     ENDPROC
     
-ENDMODULEs
+    
+ENDMODULE

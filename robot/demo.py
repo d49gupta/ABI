@@ -3,7 +3,6 @@ import robot.sensors as sensors
 import cv2
 from robot.globals import *
 import time
-import robot.main as main
 
 if __name__ == "__main__":
     print("Connecting to sensors")
@@ -22,10 +21,10 @@ if __name__ == "__main__":
         print("Successful Connections")
 
     last_time = time.perf_counter()
-    main.motion_state = MotionState.FIND_CENTER
+    global_state.motion = MotionState.FIND_TARGET
     try:
         while True:
-            if main.motion_state == MotionState.IDLE:
+            if global_state.motion == MotionState.IDLE:
                 break
 
             if not sensors.connection_status() or not irc5.connection_status():
@@ -46,15 +45,15 @@ if __name__ == "__main__":
                 break
 
             if pencil_buffer and pencil_buffer[-1].active:
-                if main.motion_state != MotionState.FIND_DEPTH:
-                    main.motion_state = MotionState.FIND_DEPTH
+                if global_state.motion != MotionState.FIND_DEPTH:
+                    global_state.motion = MotionState.FIND_DEPTH
                     print("Pencil Detected. Switching to FIND_DEPTH mode.")
                     time.sleep(5)
                 
             correction = sensors.correction_buffer[-1]
-            dx = X_TARGET + correction.dx
-            dy = Y_TARGET - correction.dy
-            dz = Z_TARGET + correction.dz - PENCIL_Z_OFFSET # TODO: NEED to properly account for height diff between TCP and camera
+            dx = X_TARGET + correction.dy
+            dy = Y_TARGET - correction.dx
+            dz = Z_TARGET + correction.dz - PENCIL_Z_OFFSET
 
             current_time = time.perf_counter()
             if current_time - last_time < ROBOT_PUBLISH_RATE:
@@ -62,13 +61,12 @@ if __name__ == "__main__":
 
             last_time = current_time
             irc5.move_robot_frame(dx, dy, dz)
-            main.state_machine()
 
             dx_diff = irc5.robot_state.pos[0] - X_TARGET
             dy_diff = Y_TARGET - irc5.robot_state.pos[1]
-            dz_diff = irc5.robot_state.pos[2] - Z_TARGET
+            dz_diff = irc5.robot_state.pos[2] - Z_TARGET + PENCIL_Z_OFFSET
 
-            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", main.motion_state.value, correction.dx, 
+            correction_logger.info("%d, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f", global_state.motion.value, correction.dx, 
                              correction.dy, correction.dz, dx_diff, dy_diff, dz_diff)
 
     except KeyboardInterrupt:
