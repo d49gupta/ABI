@@ -17,6 +17,7 @@ void signalHandler(int)
     keepRunning = false;
 }
 
+// Reads raw data from the pencil sensor, serialize to JSON and publishes to pencil/reading MQTT topic.
 void runPencilThread(GT2* pencil, Publisher* publisher) 
 {
     while (keepRunning) 
@@ -24,7 +25,7 @@ void runPencilThread(GT2* pencil, Publisher* publisher)
         pencil->readRaw();
         std::string jsonReading = pencil->JSONOutput();
         publisher->sendMessage("pencil/reading", jsonReading);        
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // ~100 Hz loop
     }
 }
 
@@ -46,8 +47,18 @@ void runCameraLoop(AprilTagDetector& detector, Publisher& publisher, uint8_t* bu
 	    std::cout<<"Reading Camera Frames"<<std::endl;
         image_u8_t img = { .width = width, .height = height, .stride = width, .buf = buffer };
         detector.detectTags(&img);
-        std::string jsonOutput = detector.JSONOutput();
-        publisher.sendMessage("camera/detections", jsonOutput);
+        std::string jsonOutput = detector.JSONOutputCenter();
+        publisher.sendMessage("camera/center_est", jsonOutput);
+        #ifdef THREE_POINT
+            std::cout << "Running 3PT mode!" << std::endl;
+            std::string jsonOutput_x = detector.JSONOutputX();
+            publisher.sendMessage("camera/x_est", jsonOutput_x);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::string jsonOutput_y = detector.JSONOutputY();
+            publisher.sendMessage("camera/y_est", jsonOutput_y);
+        #else
+            std::cout << "Running 4PT mode!" << std::endl;
+        #endif
         std::cin.ignore(size / 2); 
     }
 
@@ -62,6 +73,7 @@ int main()
 
     Publisher publisher;
     // pass in radius of corner tags, center tag, estimated offset in tag radius units
+    // float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset
     AprilTagDetector detector(22.5, 11.5, 2.375);	    
     P10DLB binaryPencil;
 

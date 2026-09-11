@@ -33,7 +33,7 @@ class CSVLogger:
         formatter = logging.Formatter(
             "%(asctime)s.%(msecs)03d,%(relativeCreated)d,%(module)s,%(lineno)d,%(levelname)s,%(msg_cnt)d,%(message)s",
             datefmt="%H:%M:%S"
-        ) # TODO: Change from mscecs to using reference time calculated from main
+        )
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
