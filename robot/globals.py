@@ -172,7 +172,7 @@ class RobotState:
         else:
             camera_topic = self.three_point.value
 
-        self.subscriber = MQTTState(mqtt_broker=MQTT_BROKER, camera_topic=camera_topic)
+        self.subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER, camera_topic=camera_topic)
         self.robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
 
     def set_target(self, target):

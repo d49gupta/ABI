@@ -170,7 +170,7 @@ def start_sensors():
     state.subscriber.client.loop_start()
 
 def stop_sensors():
-    # state.subscriber.client.publish(state.subscriber.pi_topic, "STOP")
+    state.subscriber.client.publish(state.subscriber.pi_topic, "STOP")
     state.subscriber.client.loop_stop()
     state.subscriber.start_time = time.perf_counter()
 
