@@ -57,7 +57,7 @@ class RobotConfig:
     ip_address: str = '127.0.0.1'
     port: int = 4000
     socket = None
-    timeout: float = 20.0 # TODO: adjust timeout as needed, maybe make it non-blocking with select instead
+    timeout: float = 20.0 # adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
     msg_count: int = 0
     robot_file = None
