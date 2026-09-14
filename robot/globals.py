@@ -7,6 +7,9 @@ from collections import deque
 import threading
 import time
 
+PENCIL_TOPIC = "pencil/reading"
+BINARY_PENCIL_TOPIC = "binary_pencil/reading"
+
 # --- ENUMS ---
 class CalibrationMode(Enum):
     FOUR_POINT = 0
@@ -46,7 +49,7 @@ class cameraState:
 class MQTTState:
     mqtt_broker: str = "127.0.0.1"
     camera_topic: str = "camera/center_est"
-    pencil_topic: str = "pencil/reading"
+    pencil_topic: str = BINARY_PENCIL_TOPIC
     pi_topic: str = "pi/stop"
     port: int = 1883
     client = None
