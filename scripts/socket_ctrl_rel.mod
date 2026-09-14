@@ -6,6 +6,8 @@ MODULE socket_comms
     VAR string pose_msg;
     VAR robtarget target_pose;
     VAR robtarget current_pose;
+    VAR robtarget current_pose_world;
+    VAR robtarget current_pose_conveyor;
     VAR bool good_command;
     VAR bool good_data;
     VAR string client_sim_ip := "127.0.0.1";
@@ -29,14 +31,18 @@ MODULE socket_comms
     ];
     
     PERS pose uframe_test := [[0, 0, 0],[1, 0, 0, 0]];
-    PERS wobjdata test_wobj := [FALSE, FALSE, "CNV1", [[0, 0, 0],[1, 0, 0, 0]],[[492.843, -5.70361, -862.435],[0.00386325, -0.00409188, 0.000501966, -0.999984]]];
+    PERS wobjdata test_wobj := [FALSE, FALSE, "CNV1", [[0, 0, 0],[1, 0, 0, 0]],[[0, 0, 0],[1, 0, 0, 0]]];
     
+    ! 4 point calibration
     PERS robtarget Point1 := [[393.502,-3.39382,-861.45],[0.000212606,-0.965936,-0.258777,0.00110227],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1372.54]];
     PERS robtarget Point2 := [[502.345,-2.87438,-862.37],[0.000228094,0.96596,0.258692,0.000782558],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1481.3]];
     PERS robtarget Point3 := [[557.874,-2.59812,-862.78],[0.000502056,0.965943,0.258745,0.00244777],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1536.95]];
     PERS robtarget Point4 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
-    PERS robtarget Point5 := [[498.283,1.76193,-862.465],[0.000431789,0.965854,0.25908,0.00197032],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1475.83]];
-    PERS robtarget Point6 := [[556.059,2.01758,-863.069],[0.000678125,0.96582,0.25919,0.00335087],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1533.1]];
+    
+    ! 3 point calibration
+    PERS robtarget Point5 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
+    PERS robtarget Point6 := [[498.283,1.76193,-862.465],[0.000431789,0.965854,0.25908,0.00197032],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1475.83]];
+    PERS robtarget Point7 := [[556.059,2.01758,-863.069],[0.000678125,0.96582,0.25919,0.00335087],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1533.1]];
     
     PROC openSocket()
         ActUnit CNV1;
@@ -113,24 +119,28 @@ MODULE socket_comms
     
     PROC RECORD_POINT()
         WaitRob\InPos;
-        current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
+        current_pose_world := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
+        current_pose_conveyor := CRobT(\Tool:=toolBladeTest \WObj:=test_wobj);
         IF index = 1 THEN
-            Point1 := current_pose;
+            Point1 := current_pose_world;
         ELSEIF index = 2 THEN
-            Point2 := current_pose;
+            Point2 := current_pose_world;
         ELSEIF index = 3 THEN
-            Point3 := current_pose;
+            Point3 := current_pose_world;
         ELSEIF index = 4 THEN
-            Point4 := current_pose;
+            Point4 := current_pose_world;
+            Point5 := current_pose_conveyor;
         ELSEIF index = 5 THEN
-            Point5 := current_pose;
+            Point6 := current_pose_conveyor;
         ELSEIF index = 6 THEN
-            Point6 := current_pose;
+            Point7 := current_pose_conveyor;
         ENDIF
         index := index + 1;
     ENDPROC
     
     PROC Calibrate()
+        index := 1; ! reset index for saved points
+        test_wobj.oframe := [[0,0,0],[1,0,0,0]]; ! reset work object definition
         openSocket;
         WHILE TRUE DO
             Send;

@@ -87,7 +87,7 @@ def receivePencil(payload):
     data = json.loads(payload)
     raw = int(data["raw"])
     distance = float(data["millimeters"])
-    flag = int(data["flag"])
+    flag = int(data["active"])
     pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
     print(f"Received Pencil reading: {raw} bits")
 

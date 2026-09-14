@@ -47,14 +47,15 @@ def receivePencil(payload):
     data = json.loads(payload)
     raw = int(data["raw"])
     distance = float(data["millimeters"])
+    active = float(data["active"])
 
     pencil_sample.raw = raw
     pencil_sample.distance = distance
-    pencil_sample.active = distance >= Z_ACTIVE
+    pencil_sample.active = active
     timestamp = time.perf_counter() - state.subscriber.start_time
     pencil_sample.timestamp = timestamp
 
-    pencil_logger.info("%d, %d, %.4f, %d", state.motion.value, raw, distance, pencil_sample.active)
+    pencil_logger.info("%d, %d, %.4f, %d", state.motion.value, raw, distance, active)
     curr_pencil_sample = replace(pencil_sample)
     pencil_buffer.append(curr_pencil_sample)
 

@@ -86,7 +86,7 @@ std::string GT2::JSONOutput()
     ss << "{"
        << "\"raw\": " << reading.raw << ", "
        << "\"millimeters\": " << std::fixed << std::setprecision(4) << reading.millimeters << ", "
-       << "\"flag\": " << std::boolalpha << reading.flag
+       << "\"active\": " << std::boolalpha << reading.flag
        << "}";
     std::cout<<reading.millimeters<<std::endl;
 

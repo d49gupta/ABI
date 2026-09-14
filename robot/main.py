@@ -43,9 +43,21 @@ def move_xyz_sensors():
     # Main loop will trigger pencil interrupt to go into next state
     dx = Kp_camera * sensors.correction.dx
     dy = Kp_camera * sensors.correction.dy
-    dz = -2.0
+    dz = -2.0 # TODO: Change this to use Kp_camera * sensors.correct.dz from height estimate (take into account camera and pencil offset)
     controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, dx, dy, dz)
     irc5.move_rel_frame(dx, dy, dz)
+
+def record_target():
+    if robot_pose_buffer:
+        robot_pos = robot_pose_buffer[-1].pos.copy()
+        global_state.recorded_points.append(robot_pos)
+        irc5.record_target()
+        controller_logger.info("Calibration point found at:  %.4f,  %.4f,  %.4f", robot_pos[0], robot_pos[1], robot_pos[2])
+        time.sleep(1.0)
+    else:
+        controller_logger.error("Unable to store final robot position")
+
+    global_state.motion = MotionState.ASCEND
 
 def find_pencil_depth():
     global global_state
@@ -61,15 +73,7 @@ def find_pencil_depth():
     if abs(error) < Z_TARGET_ACC:
         print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
         controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
-        
-        if robot_pose_buffer:
-            global_state.recorded_points.append(robot_pose_buffer[-1].pos.copy())
-            irc5.record_target()
-            time.sleep(1.0)
-        else:
-            controller_logger.error("Unable to store final robot position")
-
-        global_state.motion = MotionState.ASCEND
+        record_target()
 
     dz = error * Kp_pencil
     if abs(latest_pencil.distance - dz) < Z_THRESH: # Make sure to never depress too far and break pencil
@@ -83,7 +87,6 @@ def ascent():
         return
     
     ascent_diff = global_state.robot_config.initial_pos[2] - robot_pose_buffer[-1].pos[2]
-    # TODO: Change ascent diff to not initial pos but height where you see all 5 tag or always keep it there
 
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
@@ -92,6 +95,7 @@ def ascent():
         if global_state.calibration.value == CalibrationMode.FOUR_POINT.value:
             if len(global_state.recorded_points) >= 4:
                 print("Four Point Calibration Complete")
+                global_state.calibration = CalibrationMode.THREE_POINT
                 global_state.set_target(ThreePointState.FIND_X)
                 global_state.motion = MotionState.FIND_TARGET
 
@@ -231,10 +235,11 @@ if __name__ == "__main__":
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-            if pencil_buffer and pencil_buffer[-1].active and pencil_buffer[-2].active and pencil_buffer[-3].active:
+            if pencil_buffer and pencil_buffer[-1].active:
                 if global_state.motion.value < MotionState.FIND_DEPTH.value:
                     global_state.motion = MotionState.FIND_DEPTH
                     controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
+                    record_target()
                     print("Pencil Detected. Switching to FIND_DEPTH mode.")
 
             state_machine()
