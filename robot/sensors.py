@@ -29,6 +29,8 @@ def on_message(client, userdata, msg):
         if msg.topic == state.subscriber.pencil_topic:
             if state.subscriber.mqtt_broker == SIM_MQTT_BROKER:
                 receivePencilSim(payload)
+            elif state.subscriber.pencil_topic == BINARY_PENCIL_TOPIC:
+                receiveBinaryPencil(payload)
             else:
                 receivePencil(payload)
         elif (state.calibration == CalibrationMode.FOUR_POINT and msg.topic == ThreePointState.FIND_CENTER.value) or \
@@ -60,6 +62,20 @@ def receivePencil(payload):
     pencil_buffer.append(curr_pencil_sample)
 
     # print(f"Pencil Distance (mm): {correction.dz:.2f}")
+
+def receiveBinaryPencil(payload):
+    data = json.loads(payload)
+    active = bool(data["active"])
+
+    pencil_sample.active = active
+    timestamp = time.perf_counter() - state.subscriber.start_time
+    pencil_sample.timestamp = timestamp
+
+    pencil_logger.info("%d, %d, %.4f, %d", state.motion.value, 0, 0.0, active)
+    curr_pencil_sample = replace(pencil_sample)
+    pencil_buffer.append(curr_pencil_sample)
+
+    # print(f"Pencil Status: {pencil_sample.active}")
 
 def receivePencilSim(payload):
     data = json.loads(payload)
@@ -181,9 +197,9 @@ def stop_pi_detector():
     state.subscriber.client.publish(state.subscriber.pi_topic, "STOP")
 
 if __name__ == "__main__":
-    open_sensors()
     connect_sensors()
     start_sensors()
+    open_sensors()
 
     while True:
         if show:
@@ -192,5 +208,6 @@ if __name__ == "__main__":
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+    print("Shutting down sensors")
     cv2.destroyAllWindows()
     stop_sensors()
