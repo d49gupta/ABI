@@ -193,9 +193,6 @@ def stop_sensors():
 def open_sensors(mode: str = "four-point"):
     state.subscriber.client.publish(state.subscriber.pi_start_topic, mode)
 
-def stop_pi_detector():
-    state.subscriber.client.publish(state.subscriber.pi_topic, "STOP")
-
 if __name__ == "__main__":
     connect_sensors()
     start_sensors()
