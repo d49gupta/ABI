@@ -51,6 +51,7 @@ class MQTTState:
     camera_topic: str = "camera/center_est"
     pencil_topic: str = BINARY_PENCIL_TOPIC
     pi_topic: str = "pi/stop"
+    pi_start_topic: str = "pi/start"
     port: int = 1883
     client = None
     msg_count: int = 0
