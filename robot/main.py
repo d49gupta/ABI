@@ -2,6 +2,9 @@ import robot.abb_irc5 as irc5
 from robot.globals import *
 import time
 import cv2
+import sys
+
+RUN_MODE = "full" # "three", "four", or "full" -- set from argv in __main__
 
 def set_robot_speed(speed):
     global global_state
@@ -121,13 +124,16 @@ def ascend():
                 event_logger.info("Four Point Calibration Complete")
                 event_logger.info(global_state.recorded_points)
 
-                global_state.calibration = CalibrationMode.THREE_POINT
-                global_state.set_target(ThreePointState.FIND_X)
-                global_state.motion = MotionState.FIND_TARGET
+                if RUN_MODE == "four":
+                    global_state.motion = MotionState.IDLE
+                else:
+                    global_state.calibration = CalibrationMode.THREE_POINT
+                    global_state.set_target(ThreePointState.FIND_X)
+                    global_state.motion = MotionState.FIND_TARGET
 
-                print("FINDING X TARGET")
-                event_logger.info("FINDING X TARGET")
-                time.sleep(1.0)                
+                    print("FINDING X TARGET")
+                    event_logger.info("FINDING X TARGET")
+                    time.sleep(1.0)
             else:
                 print("Running the Conveyor")
                 event_logger.info("Running the Conveyor")
@@ -222,15 +228,27 @@ def find_init_tags():
         return
 
 if __name__ == "__main__":
+    RUN_MODE = sys.argv[1] if len(sys.argv) > 1 else "full"
+    if RUN_MODE not in ("three", "four", "full"):
+        print(f"Unknown mode '{RUN_MODE}', expected one of: three, four, full")
+        exit(1)
+
     global_state.motion = MotionState.FIND_INIT_TAGS
-    global_state.set_target(ThreePointState.FIND_CENTER)
+    if RUN_MODE == "three":
+        global_state.calibration = CalibrationMode.THREE_POINT
+        global_state.set_target(ThreePointState.FIND_CENTER)
+        pi_mode = "three-point"
+    else:
+        global_state.calibration = CalibrationMode.FOUR_POINT
+        global_state.set_target(ThreePointState.FIND_CENTER)
+        pi_mode = "four-point" if RUN_MODE == "four" else "three-point"
 
     import robot.sensors as sensors
-    print("Connecting to sensors...")
-    event_logger.info("Connecting to sensors...")
+    print(f"Connecting to sensors... (mode={RUN_MODE})")
+    event_logger.info("Connecting to sensors... (mode=%s)", RUN_MODE)
     sensors.connect_sensors()
     sensors.start_sensors()
-    sensors.open_sensors()
+    sensors.open_sensors(pi_mode)
     print("Connecting to robot...")
     event_logger.info("Connecting to robot...")
     irc5.connect_robot()

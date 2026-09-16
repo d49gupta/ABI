@@ -178,26 +178,20 @@ class RobotState:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, mode=None):
+    def __init__(self):
         if self._initialized: return
         
         self._initialized = True
         self.motion = MotionState.IDLE
         self.three_point = ThreePointState.IDLE
-        self.calibration = mode
+        self.calibration = None
         self.recorded_points = []
 
-        if self.calibration == CalibrationMode.FOUR_POINT:
-            camera_topic = ThreePointState.FIND_CENTER.value
-        else:
-            camera_topic = self.three_point.value
-
-        self.subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER, camera_topic=camera_topic)
+        self.subscriber = MQTTState(mqtt_broker=MQTT_ABI_BROKER)
         self.robot_config = RobotConfig(ip_address=ROBOT_REAL_IP)
 
     def set_target(self, target):
         self.three_point = target
         self.subscriber.camera_topic = self.three_point.value
 
-global_state = RobotState(CalibrationMode.FOUR_POINT)
-# global_state.set_target(ThreePointState.FIND_CENTER)
+global_state = RobotState()

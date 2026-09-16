@@ -193,6 +193,7 @@ def open_sensors(mode: str = "four-point"):
     state.subscriber.client.publish(state.subscriber.pi_start_topic, mode)
 
 if __name__ == "__main__":
+    state.calibration = CalibrationMode.FOUR_POINT
     connect_sensors()
     start_sensors()
     open_sensors()

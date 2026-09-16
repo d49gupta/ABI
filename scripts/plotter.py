@@ -70,8 +70,10 @@ def update(frame):
     return line_dx, line_dy, line_dz, line_pencil
 
 if __name__ == "__main__":
+    global_state.calibration = CalibrationMode.FOUR_POINT
     connect_sensors()
     start_sensors()
+    open_sensors()
     time.sleep(2)
 
     if not connection_status():

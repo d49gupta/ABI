@@ -1,3 +1,4 @@
 build
 *.pyc
 test_logs
+current_logs
