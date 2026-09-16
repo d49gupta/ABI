@@ -50,7 +50,7 @@ def descend():
     dy = Kp_descent * sensors.correction.dy
     dz = -2.0 # TODO: Change this to use Kp_descent * sensors.correct.dz from height estimate
     controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, dz)
-    irc5.move_rel_frame(dx, dy, dz)
+    irc5.move_rel_frame(dx, dy, dz, True)
 
 def descend_v2():
     # Main loop will trigger pencil interrupt to go into next state

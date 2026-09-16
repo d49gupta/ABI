@@ -61,7 +61,7 @@ def get_displacement():
 def _send_command(command: str):
     global_state.robot_config.socket.sendall((command + "\n").encode('utf-8'))
 
-def move_rel_frame(dx, dy, dz):
+def move_rel_frame(dx, dy, dz, override_cmd=False):
     global global_state
     current_time = time.perf_counter()
     if current_time - global_state.robot_config.last_time < ROBOT_PUBLISH_RATE:
@@ -72,7 +72,7 @@ def move_rel_frame(dx, dy, dz):
     ddy = dy - global_state.robot_config.last_dy
     ddz = dz - global_state.robot_config.last_dz
     magnitude = (ddx**2 + ddy**2 + ddz**2) ** 0.5
-    if magnitude < MOVE_DEADBAND_MM:
+    if magnitude < MOVE_DEADBAND_MM and not override_cmd:
         return
 
     global_state.robot_config.last_time = current_time
