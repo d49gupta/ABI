@@ -43,7 +43,7 @@ def move_xyz_sensors():
     # Main loop will trigger pencil interrupt to go into next state
     dx = Kp_camera * sensors.correction.dx
     dy = Kp_camera * sensors.correction.dy
-    dz = -2.0 # TODO: Change this to use Kp_camera * sensors.correct.dz from height estimate (take into account camera and pencil offset)
+    dz = -2.0 # TODO: Change this to use Kp_camera * sensors.correct.dz from height estimate
     controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, dx, dy, dz)
     irc5.move_rel_frame(dx, dy, dz)
 
@@ -190,15 +190,14 @@ if __name__ == "__main__":
     global_state.set_target(ThreePointState.FIND_CENTER)
 
     import robot.sensors as sensors
-    print("Connecting to sensors")
+    print("Connecting to sensors...")
     sensors.connect_sensors()
     sensors.start_sensors()
+    sensors.open_sensors()
     print("Connecting to robot...")
     irc5.connect_robot()
     irc5.start_reading_robot()
     time.sleep(2)
-
-    # TODO: Send command to change speed of arm in move_rel
 
     if not sensors.connection_status() or not irc5.connection_status():
         print(sensors.connection_status(), irc5.connection_status())
