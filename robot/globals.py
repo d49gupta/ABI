@@ -76,7 +76,11 @@ class RobotConfig:
     read_thread = None
     stop_trigger = None
     last_time = None
+    last_dx: float = 0.0
+    last_dy: float = 0.0
+    last_dz: float = 0.0
     initial_pos : np.ndarray = None
+    tcp_speed: float = 5.0
 
 @dataclass
 class conveyorState:
@@ -90,7 +94,7 @@ class robotState:
     conveyor_axis: int = 0
     timestamp: int = 0
 
-# --- GLOBALS ---
+# --- CONFIG GLOBALS ---
 MQTT_HOTSPOT_BROKER = "172.20.10.5"
 MQTT_WIFI_BROKER = "192.168.0.54"
 SIM_MQTT_BROKER = "127.0.0.1"
@@ -103,20 +107,29 @@ WINDOW_HEIGHT = 480
 img_center_x = WINDOW_WIDTH // 2
 img_center_y = WINDOW_HEIGHT // 2
 
+# --- SIM GLOBALS --- 
 X_TARGET = 545.692
 Y_TARGET = 10.407
 Z_TARGET = -905.672
+
+# --- REAL GLOBALS --- 
 Z_THRESH = 8.0
 Z_TARGET_DEPTH = 4.0
 Z_ACTIVE = 1.0
-XY_TARGET_ACC = 1.0
+XY_TARGET_ACC = 1.0 # Minimum accuracy (mm) needed to enter descent state
 Z_TARGET_ACC = 0.1
-ASCENT_HEIGHT_DIFF = 5.0
-PENCIL_Z_OFFSET = 55.5 # mm
-ROBOT_PUBLISH_RATE = 0.35 # seconds, should not be faster than camera frequency
-PENCIL_MOVE_RATE = 1.0
+ASCENT_HEIGHT_DIFF = 5.0 # Diff between initial and ascent height
+PENCIL_Z_OFFSET = 55.5 # mm between camera and pencil sensor on z axis
+ROBOT_PUBLISH_RATE = 0
+MOVE_DEADBAND_MM = 0.1 # suppress a MOVE_REL send if correction magnitude less than threshold
+PENCIL_MOVE_RATE = 1.0 # slow movement of while in FIND_DEPTH state to not damange sensor
 CONVEYOR_MOVE_TIME = 1.5
 
+ASCENT_SPEED = 30.0
+FIND_DEPTH_SPEED = 2.0
+FIND_TARGET_SPEED = 15.0
+
+# --- VISUALS --- 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
 canvas_lock = threading.Lock()
 show = True
@@ -137,12 +150,13 @@ conveyor_state = conveyorState()
 state_last_time = time.perf_counter()
 
 # --- LOGGERS ---
-camera_logger = CSVLogger(name="camera", log_dir="test_logs")
-pencil_logger = CSVLogger(name="pencil", log_dir="test_logs")
-robot_logger = CSVLogger(name="robot", log_dir="test_logs")
-correction_logger = CSVLogger(name="diff", log_dir="test_logs")
-camera_perf_logger = CSVLogger(name="camera_perf", log_dir="test_logs")
-controller_logger = CSVLogger(name="controller", log_dir="test_logs")
+camera_logger = CSVLogger(name="camera", log_dir="current_logs")
+pencil_logger = CSVLogger(name="pencil", log_dir="current_logs")
+robot_logger = CSVLogger(name="robot", log_dir="current_logs")
+correction_logger = CSVLogger(name="diff", log_dir="current_logs")
+camera_perf_logger = CSVLogger(name="camera_perf", log_dir="current_logs")
+controller_logger = CSVLogger(name="controller", log_dir="current_logs")
+event_logger = CSVLogger(name="events", log_dir="current_logs")
 
 # --- CONTROLLERS ---
 alpha_camera = 0.5
@@ -150,7 +164,7 @@ smooth_dx = 0.0
 smooth_dy = 0.0
 Kp_camera = 0.075
 Kp_pencil = 0.1
-Kp_ascent = 0.1
+Kp_ascent = 0.2
 
 # --- STATES ---
 class RobotState:

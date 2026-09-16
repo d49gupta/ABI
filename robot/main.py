@@ -3,11 +3,17 @@ from robot.globals import *
 import time
 import cv2
 
-def move_xy_sensors():
+def set_robot_speed(speed):
+    global global_state
+    if global_state.robot_config.tcp_speed != speed:
+        irc5.set_speed(speed)
+        global_state.robot_config.tcp_speed = speed
+
+def find_target():
     global global_state, conveyor_state
 
     if not sensors.correction_buffer:
-        controller_logger.warning("Not enough correction data for camera smoothing.")
+        event_logger.warning("Not enough correction data for camera smoothing.")
         return
     
     global smooth_dx, smooth_dy
@@ -16,16 +22,14 @@ def move_xy_sensors():
     smooth_dy = (alpha_camera * camera_curr_correction.dy) + (1 - alpha_camera) * smooth_dy
     magnitude = (smooth_dx**2 + smooth_dy**2)**0.5
 
-    if conveyor_state.running and conveyor_state.last_time:
-        irc5.run_conveyor()
-        curr_time = time.perf_counter()
-        if curr_time - conveyor_state.last_time >= CONVEYOR_MOVE_TIME:
-            print("Stopping the conveyor")    
+    curr_time = time.perf_counter()
+    if conveyor_state.running and curr_time - conveyor_state.last_time >= CONVEYOR_MOVE_TIME:
+        if global_state.calibration == CalibrationMode.FOUR_POINT:
+            print("Stopping the conveyor")
+            event_logger.info("Stopping the conveyor")    
+            irc5.stop_conveyor()
             conveyor_state.running = False
             conveyor_state.last_time = None
-
-    if not conveyor_state.running and global_state.calibration == CalibrationMode.FOUR_POINT:
-            irc5.stop_conveyor()
 
     if magnitude > XY_TARGET_ACC or conveyor_state.running:
         dx = Kp_camera * smooth_dx
@@ -34,12 +38,12 @@ def move_xy_sensors():
         irc5.move_rel_frame(dx, dy, 0.0)
     else:
         print(f"Camera Correction Target Reached")
-        controller_logger.info("Camera Correction Target Reached")
+        event_logger.info("Camera Correction Target Reached")
         smooth_dx = 0
         smooth_dy = 0
         global_state.motion = MotionState.DESCEND
 
-def move_xyz_sensors():
+def descend():
     # Main loop will trigger pencil interrupt to go into next state
     dx = Kp_camera * sensors.correction.dx
     dy = Kp_camera * sensors.correction.dy
@@ -52,18 +56,18 @@ def record_target():
         robot_pos = robot_pose_buffer[-1].pos.copy()
         global_state.recorded_points.append(robot_pos)
         irc5.record_target()
-        controller_logger.info("Calibration point found at:  %.4f,  %.4f,  %.4f", robot_pos[0], robot_pos[1], robot_pos[2])
+        event_logger.info("Calibration point found at:  %.4f,  %.4f,  %.4f", robot_pos[0], robot_pos[1], robot_pos[2])
         time.sleep(1.0)
     else:
-        controller_logger.error("Unable to store final robot position")
+        event_logger.error("Unable to store final robot position")
 
     global_state.motion = MotionState.ASCEND
 
-def find_pencil_depth():
+def find_depth():
     global global_state
 
     if not pencil_buffer:
-        controller_logger.warning("No pencil data available for depth finding.")
+        event_logger.warning("No pencil data available for depth finding.")
         irc5.stop_robot()
         return
 
@@ -72,7 +76,7 @@ def find_pencil_depth():
 
     if abs(error) < Z_TARGET_ACC:
         print(f"Pencil Depth Target Reached: {latest_pencil.distance:.4f} mm")
-        controller_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
+        event_logger.info("Pencil Depth Target Reached: %.4f mm", latest_pencil.distance)
         record_target()
 
     dz = error * Kp_pencil
@@ -80,32 +84,38 @@ def find_pencil_depth():
         irc5.move_rel_frame(0, 0, dz)
         controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, 0, 0, dz)
 
-def ascent():
+def ascend():
     global global_state, conveyor_state
 
     if not robot_pose_buffer:
+        event_logger.warning("No robot data available")
         return
     
     ascent_diff = global_state.robot_config.initial_pos[2] - robot_pose_buffer[-1].pos[2]
 
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
-        controller_logger.info("Ascent Complete")
+        event_logger.info("Ascent Complete")
 
         if global_state.calibration.value == CalibrationMode.FOUR_POINT.value:
             if len(global_state.recorded_points) >= 4:
                 print("Four Point Calibration Complete")
+                print(global_state.recorded_points)
+                event_logger.info("Four Point Calibration Complete")
+                event_logger.info(global_state.recorded_points)
+
                 global_state.calibration = CalibrationMode.THREE_POINT
                 global_state.set_target(ThreePointState.FIND_X)
                 global_state.motion = MotionState.FIND_TARGET
 
                 print("FINDING X TARGET")
+                event_logger.info("FINDING X TARGET")
                 time.sleep(1.0)                
-                print(global_state.recorded_points)
             else:
                 print("Running the Conveyor")
-                conveyor_state.running = True
+                event_logger.info("Running the Conveyor")
                 irc5.run_conveyor()
+                conveyor_state.running = True
                 conveyor_state.last_time = time.perf_counter()
                 global_state.motion = MotionState.FIND_TARGET
 
@@ -114,12 +124,13 @@ def ascent():
             if global_state.three_point == ThreePointState.FIND_X:
                 global_state.set_target(ThreePointState.FIND_Y)
                 print("FINDING Y TARGET")
+                event_logger.info("FINDING Y TARGET")
                 time.sleep(1.0)
             else:
                 global_state.set_target(ThreePointState.IDLE)
                 global_state.motion = MotionState.IDLE
 
-    dz = 2.0
+    dz = Kp_ascent * ascent_diff
     controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, 0, 0, dz)
     irc5.move_rel_frame(0, 0, dz)
 
@@ -129,14 +140,17 @@ def state_machine():
     time_interval = current_time - state_last_time
 
     if global_state.motion == MotionState.FIND_TARGET:
-        move_xy_sensors()
+        set_robot_speed(FIND_TARGET_SPEED)
+        find_target()
     elif global_state.motion == MotionState.DESCEND:
-        move_xyz_sensors()
+        descend()
     elif global_state.motion == MotionState.FIND_DEPTH and time_interval >= PENCIL_MOVE_RATE:
-        find_pencil_depth()
+        set_robot_speed(DEPTH_SPEED)
+        find_depth()
         state_last_time = current_time
     elif global_state.motion == MotionState.ASCEND:
-        ascent()
+        set_robot_speed(ASCENT_SPEED)
+        ascend()
     else:
         return
 
@@ -152,6 +166,7 @@ def move_xy_target():
         irc5.move_rel_frame(dx_norm, dy_norm, 0)
     else:
         print(f"Center Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f})")
+        event_logger.info(f"Center Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f})")
         global_state.motion = MotionState.DESCEND
         return
 
@@ -169,6 +184,7 @@ def move_xyz_target():
         dz_norm = dz / magnitude
     else:
         print(f"Final Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
+        event_logger.info(f"Final Target Reached: ({irc5.robot_state.pos[0]:.4f}, {irc5.robot_state.pos[1]:.4f}, {irc5.robot_state.pos[2]:.4f})")
         global_state.motion = MotionState.ASCEND
         return
 
@@ -176,14 +192,15 @@ def move_xyz_target():
 
 def find_init_tags(): 
     global global_state
-    if not camera_buffer:
+    if not camera_buffer and not conveyor_state.running:
         irc5.run_conveyor()
+        conveyor_state.running = True
     else:
         irc5.stop_conveyor()
+        conveyor_state.running = False
         global_state.motion = MotionState.FIND_TARGET
-        controller_logger.info("Tags Found")
+        event_logger.info("Tags Found")
         return
-
 
 if __name__ == "__main__":
     global_state.motion = MotionState.FIND_INIT_TAGS
@@ -191,41 +208,49 @@ if __name__ == "__main__":
 
     import robot.sensors as sensors
     print("Connecting to sensors...")
+    event_logger.info("Connecting to sensors...")
     sensors.connect_sensors()
     sensors.start_sensors()
     sensors.open_sensors()
     print("Connecting to robot...")
+    event_logger.info("Connecting to robot...")
     irc5.connect_robot()
     irc5.start_reading_robot()
     time.sleep(2)
 
-    if not sensors.connection_status() or not irc5.connection_status():
-        print(sensors.connection_status(), irc5.connection_status())
-        print("Failed to connect to sensors or robot.")
+    sensors_status = sensors.connection_status()
+    robot_status = irc5.connection_status()
+    if not sensors_status or not robot_status:
+        print(f"Failed to connect to sensors or robot: {sensors_status}, {robot_status}")
+        event_logger.error("Failed to connect to sensors or robot: %s, %s", sensors_status, robot_status)
         exit(1)
     else:
+        event_logger.info("Successful Connections")
         print("Successful Connections")
 
-    last_time = time.perf_counter()
+    run_start_time = time.perf_counter()
     global_state.motion = MotionState.FIND_INIT_TAGS
     try:
         while True:
             if global_state.motion == MotionState.IDLE:
                 break
 
-            if not sensors.connection_status() or not irc5.connection_status():
+            sensors_status = sensors.connection_status()
+            robot_status = irc5.connection_status()
+            if not sensors_status or not robot_status:
                 print("Lost connection to sensors or robot.")
+                event_logger.error("Lost connection to sensors or robot: %s, %s", sensors_status, robot_status)
                 break
             
             if global_state.motion == MotionState.FIND_INIT_TAGS:
                 find_init_tags()
             
             if not sensors.correction_buffer and global_state.motion != MotionState.FIND_INIT_TAGS:
-                controller_logger.warning("No correction data available yet.")
+                event_logger.warning("No correction data available yet.")
                 continue
 
             if not robot_pose_buffer:
-                controller_logger.warning("No robot pose data available yet.")
+                event_logger.warning("No robot pose data available yet.")
                 continue
             
             if show:
@@ -237,7 +262,7 @@ if __name__ == "__main__":
             if pencil_buffer and pencil_buffer[-1].active:
                 if global_state.motion.value < MotionState.FIND_DEPTH.value:
                     global_state.motion = MotionState.FIND_DEPTH
-                    controller_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
+                    event_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
                     record_target()
                     print("Pencil Detected. Switching to FIND_DEPTH mode.")
 
@@ -246,7 +271,12 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:
+        elapsed = time.perf_counter() - run_start_time
+        print(f"Total elapsed time: {elapsed:.2f} seconds")
         print("Disconnecting from robot...")
+        event_logger.info(f"Total elapsed time: {elapsed:.2f} seconds")
+        event_logger.info("Stopping the conveyor, Disconnecting the robot & sensors...")
+        irc5.stop_conveyor()
         irc5.stop_robot()
         irc5.stop_reading_robot()
         irc5.disconnect_robot()

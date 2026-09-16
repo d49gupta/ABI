@@ -59,43 +59,61 @@ def get_displacement():
         return np.zeros(3)
     return robot_state.pos - global_state.robot_config.initial_pos
 
+def _send_command(command: str):
+    global_state.robot_config.socket.sendall((command + "\n").encode('utf-8'))
+
 def move_rel_frame(dx, dy, dz):
     global global_state
     current_time = time.perf_counter()
     if current_time - global_state.robot_config.last_time < ROBOT_PUBLISH_RATE:
         return
-    
+
+    # only send if correction magnitude is significant enough
+    ddx = dx - global_state.robot_config.last_dx
+    ddy = dy - global_state.robot_config.last_dy
+    ddz = dz - global_state.robot_config.last_dz
+    magnitude = (ddx**2 + ddy**2 + ddz**2) ** 0.5
+    if magnitude < MOVE_DEADBAND_MM:
+        return
+
     global_state.robot_config.last_time = current_time
+    global_state.robot_config.last_dx = dx
+    global_state.robot_config.last_dy = dy
+    global_state.robot_config.last_dz = dz
     command = f"1, {dx}, {dy}, {dz}"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def stop_robot():
     command = f"2"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
+
+def set_speed(v_tcp):
+    command = f"6,{v_tcp}"
+    _send_command(command)
 
 def move_robot_frame(x, y, z):
     command = f"3, {x}, {y}, {z}"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def yaw_robot(angle):
     command = f"4,{angle}"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def run_conveyor():
     command = f"8"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def stop_conveyor():
     command = f"9"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def record_target():
     command = f"7"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def move_robot_home():
     command = f"5"
-    global_state.robot_config.socket.sendall(command.encode('utf-8'))
+    _send_command(command)
 
 def disconnect_robot():
     global_state.robot_config.socket.close()
@@ -104,9 +122,9 @@ if __name__ == "__main__":
     connect_robot()
     start_reading_robot()
     time.sleep(2)  # Wait for connection to establish
+    run_conveyor()
 
     try:
-        run_conveyor()
         while True:
             move_rel_frame(10, 0, 0)
             print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
@@ -115,5 +133,6 @@ if __name__ == "__main__":
     finally:
         print("Disconnecting from robot...")
         stop_conveyor()
+        move_robot_home()
         stop_reading_robot()
         disconnect_robot()

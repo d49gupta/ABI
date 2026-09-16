@@ -18,10 +18,13 @@ MODULE socket_comms
     VAR string id_str;
     VAR string data_str;
     VAR pos move_data;
+    VAR string recv_buffer := "";
+    VAR bool pending_move := FALSE;
+    CONST num RECV_TIMEOUT := 5; ! seconds with no data at all before SocketReceive errors
     ! TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
     ! TASK PERS tooldata toolBladeTest := [TRUE, [[1.19, 1.1, 334.77], [1, 0, 0, 0]], [0.653, [11.99, -33.41, -0.98], [1, 0, 0, 0], 0, 0, 0]];
     TASK PERS tooldata toolBladeTest := [TRUE, [[0, 0, 296.30], [1, 0, 0, 0]], [1.927, [4.838, 0.915, -156.08], [1, 0, 0, 0], 0, 0, 0]];
-    VAR speeddata speed_var := [50, 10, 1000, 1000];
+    VAR speeddata speed_var := [5, 50, 5000, 1000];
     VAR num index := 1;
     
     PERS pose uframe_test := [[0, 0, 0],[1, 0, 0, 0]];
@@ -63,17 +66,37 @@ MODULE socket_comms
     ENDPROC
     
     PROC Receive()
-        SocketReceive client_socket \Str:=received_msg;
-        comma_index := StrFind(received_msg, 1, ",");
-        id_str := StrPart(received_msg, 1, comma_index - 1);
+        VAR intnum nl_pos;
+
+        ! Append whatever was cut off last time until end character
+        SocketReceive client_socket \Str:=received_msg \Time:=RECV_TIMEOUT;
+        recv_buffer := recv_buffer + received_msg;
+
+        ! iterate through all instances of end character for concated messages
+        nl_pos := StrFind(recv_buffer, 1, "\0A");
+        WHILE nl_pos <= StrLen(recv_buffer) DO
+            DispatchMessage(StrPart(recv_buffer, 1, nl_pos - 1));
+            recv_buffer := StrPart(recv_buffer, nl_pos + 1, StrLen(recv_buffer) - nl_pos);
+            nl_pos := StrFind(recv_buffer, 1, "\0A");
+        ENDWHILE
+
+        IF pending_move THEN
+            pending_move := FALSE;
+            MOVE_REL;
+        ENDIF
+    ENDPROC
+
+    PROC DispatchMessage(string msg)
+        comma_index := StrFind(msg, 1, ",");
+        id_str := StrPart(msg, 1, comma_index - 1);
         good_command := StrToVal(id_str, command_id);
-        
+
         IF good_command THEN
             TEST command_id
             CASE 1:
-                data_str := "[" + StrPart(received_msg, comma_index + 1, StrLen(received_msg) - comma_index) + "]";
+                data_str := "[" + StrPart(msg, comma_index + 1, StrLen(msg) - comma_index) + "]";
                 good_data := StrToVal(data_str, move_data);
-                MOVE_REL;
+                pending_move := good_data;
             CASE 2:
                 StopMove;
                 closeSocket;
@@ -85,12 +108,21 @@ MODULE socket_comms
                 RECORD_POINT;
             CASE 5:
                 GoHomeJ;
+                WaitRob\InPos;
+            CASE 6:
+                data_str := StrPart(msg, comma_index + 1, StrLen(msg) - comma_index);
+                good_data := StrToVal(data_str, speed_var.v_tcp);
+                IF speed_var.v_tcp > 50 THEN
+                    speed_var.v_tcp := 50;
+                ELSEIF speed_var.v_tcp < 1 THEN
+                    speed_var.v_tcp := 1;
+                ENDIF
             ENDTEST
         ENDIF
     ENDPROC
-        
+
     PROC MOVE_REL()
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), v5, fine, toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, fine, toolBladeTest;
         !WaitRob\InPos;
     ENDPROC
     
@@ -101,13 +133,11 @@ MODULE socket_comms
     
     PROC MOVE_CONVEYOR()
         ErrWRite\I,"Turning On CNV ","Turning On CNV";
-        speed_var := [10, 50, 5000, 1000];
         Set do_CNV_Fwd;
     ENDPROC
     
     PROC STOP_CONVEYOR()
         ErrWRite\I,"Turning Off CNV ","Turning Off CNV";
-        speed_var := [5, 50, 5000, 1000];
         reset do_CNV_Fwd;
     ENDPROC
     
