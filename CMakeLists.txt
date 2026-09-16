@@ -10,7 +10,7 @@ endif()
 
 
 add_definitions(-DTHREE_POINT)
-add_definitions(-DOLD_TAGS)
+# add_definitions(-DOLD_TAGS)
 
 find_package(OpenCV REQUIRED)
 find_package(PkgConfig REQUIRED)
