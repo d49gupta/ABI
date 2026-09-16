@@ -153,7 +153,6 @@ def receiveCamera(payload):
         
         curr_camera_sample = replace(camera_sample)
         curr_correction = replace(correction)
-        camera_buffer.append(curr_camera_sample)
         correction_buffer.append(curr_correction)
 
         if show:

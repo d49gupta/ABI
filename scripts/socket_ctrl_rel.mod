@@ -53,14 +53,12 @@ MODULE socket_comms
         
     PROC Send()
         current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
-        
-        pose_msg := ValToStr(current_pose.trans.x) + "," + 
-                    ValToStr(current_pose.trans.y) + "," + 
+
+        pose_msg := ValToStr(current_pose.trans.x) + "," +
+                    ValToStr(current_pose.trans.y) + "," +
                     ValToStr(current_pose.trans.z) + "," +
-                    ValToStr(current_pose.rot.q1) + "," + 
-                    ValToStr(current_pose.rot.q2) + "," + 
-                    ValToStr(current_pose.rot.q3) + "," +
-                    ValToStr(current_pose.rot.q4);
+                    ValToStr(current_pose.extax.eax_f) + "," +
+                    ValToStr(speed_var.v_tcp);
         send_msg := pose_msg + "\0A";
         SocketSend client_socket \Str:=send_msg;
     ENDPROC

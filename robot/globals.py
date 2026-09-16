@@ -81,6 +81,7 @@ class RobotConfig:
     last_dz: float = 0.0
     initial_pos : np.ndarray = None
     tcp_speed: float = 5.0
+    init_est_z: float = 0.0
 
 @dataclass
 class conveyorState:
@@ -90,8 +91,8 @@ class conveyorState:
 @dataclass
 class robotState:
     pos : np.ndarray = None
-    orientation : np.ndarray = None
-    conveyor_axis: int = 0
+    conveyor_axis: float = 0.0
+    reported_speed: float = 0.0
     timestamp: int = 0
 
 # --- CONFIG GLOBALS ---
@@ -126,7 +127,7 @@ PENCIL_MOVE_RATE = 1.0 # slow movement of while in FIND_DEPTH state to not daman
 CONVEYOR_MOVE_TIME = 1.5
 
 ASCENT_SPEED = 30.0
-FIND_DEPTH_SPEED = 2.0
+FIND_DEPTH_SPEED = 1.0
 FIND_TARGET_SPEED = 15.0
 
 # --- VISUALS --- 
@@ -137,7 +138,6 @@ show_camera_info = False
 
 # --- BUFFERS ---
 pencil_buffer = deque(maxlen=50)
-camera_buffer = deque(maxlen=10)
 correction_buffer = deque(maxlen=10)
 robot_pose_buffer = deque(maxlen=25)
 
@@ -162,9 +162,10 @@ event_logger = CSVLogger(name="events", log_dir="current_logs")
 alpha_camera = 0.5
 smooth_dx = 0.0
 smooth_dy = 0.0
-Kp_camera = 0.075
+Kp_target = 0.075
 Kp_pencil = 0.1
 Kp_ascent = 0.2
+Kp_descent = 0.1
 
 # --- STATES ---
 class RobotState:

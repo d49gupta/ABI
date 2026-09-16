@@ -32,17 +32,16 @@ def read_robot_state():
                 # robot_values = [float(val) for val in line.split(',')]
                 robot_values = [float(val) for val in line.strip().split(',')]
                 robot_state.pos = np.array(robot_values[0:3])
-                robot_state.orientation = np.array(robot_values[3:7])
-                robot_state.conveyor_axis = 0
+                robot_state.conveyor_axis = robot_values[3]
+                robot_state.reported_speed = robot_values[4]
 
                 if global_state.robot_config.initial_pos is None:
                     global_state.robot_config.initial_pos = robot_state.pos.copy()
 
                 curr_robot_state = replace(robot_state)
                 robot_pose_buffer.append(curr_robot_state)
-                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d", global_state.motion.value, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2], 
-                                curr_robot_state.orientation[0], curr_robot_state.orientation[1], curr_robot_state.orientation[2], curr_robot_state.orientation[3],
-                                curr_robot_state.conveyor_axis)
+                robot_logger.info("%d, %.2f, %.2f, %.2f, %.2f, %.2f", global_state.motion.value, curr_robot_state.pos[0], curr_robot_state.pos[1], curr_robot_state.pos[2],
+                                curr_robot_state.conveyor_axis, curr_robot_state.reported_speed)
         except socket.timeout:
             robot_logger.warning("Timeout: No data received from robot.")
             print("Timeout: No data received from robot.")
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     try:
         while True:
             move_rel_frame(10, 0, 0)
-            print(f"Current Position: {robot_state.pos}, Orientation: {robot_state.orientation}")
+            print(f"Current Position: {robot_state.pos}, Conveyor Axis: {robot_state.conveyor_axis}, Speed: {robot_state.reported_speed}")
     except KeyboardInterrupt:
         print("Shutting down...")
     finally:

@@ -32,9 +32,9 @@ def find_target():
             conveyor_state.last_time = None
 
     if magnitude > XY_TARGET_ACC or conveyor_state.running:
-        dx = Kp_camera * smooth_dx
-        dy = Kp_camera * smooth_dy
-        controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, dx, dy, 0.0)
+        dx = Kp_target * smooth_dx
+        dy = Kp_target * smooth_dy
+        controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, 0.0)
         irc5.move_rel_frame(dx, dy, 0.0)
     else:
         print(f"Camera Correction Target Reached")
@@ -45,10 +45,25 @@ def find_target():
 
 def descend():
     # Main loop will trigger pencil interrupt to go into next state
-    dx = Kp_camera * sensors.correction.dx
-    dy = Kp_camera * sensors.correction.dy
-    dz = -2.0 # TODO: Change this to use Kp_camera * sensors.correct.dz from height estimate
-    controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, dx, dy, dz)
+    dx = Kp_descent * sensors.correction.dx
+    dy = Kp_descent * sensors.correction.dy
+    dz = -2.0 # TODO: Change this to use Kp_descent * sensors.correct.dz from height estimate
+    controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, dz)
+    irc5.move_rel_frame(dx, dy, dz)
+
+def descend_v2():
+    # Main loop will trigger pencil interrupt to go into next state
+    dx = Kp_descent * sensors.correction.dx
+    dy = Kp_descent * sensors.correction.dy
+    dz = -Kp_descent * sensors.correction.dz
+
+    t = 0
+    if global_state.robot_config.init_est_z > 0:
+        t = max(0, min(1, sensors.correction.dz / global_state.robot_config.init_est_z))
+
+    speed = FIND_DEPTH_SPEED + (FIND_TARGET_SPEED - FIND_DEPTH_SPEED) * t
+    set_robot_speed(speed)
+    controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, dz)
     irc5.move_rel_frame(dx, dy, dz)
 
 def record_target():
@@ -82,7 +97,7 @@ def find_depth():
     dz = error * Kp_pencil
     if abs(latest_pencil.distance - dz) < Z_THRESH: # Make sure to never depress too far and break pencil
         irc5.move_rel_frame(0, 0, dz)
-        controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, 0, 0, dz)
+        controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, 0, 0, dz)
 
 def ascend():
     global global_state, conveyor_state
@@ -96,6 +111,7 @@ def ascend():
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
         event_logger.info("Ascent Complete")
+        global_state.robot_config.init_est_z = correction_buffer[-1].dz
 
         if global_state.calibration.value == CalibrationMode.FOUR_POINT.value:
             if len(global_state.recorded_points) >= 4:
@@ -129,9 +145,11 @@ def ascend():
             else:
                 global_state.set_target(ThreePointState.IDLE)
                 global_state.motion = MotionState.IDLE
+        
+        return
 
     dz = Kp_ascent * ascent_diff
-    controller_logger.info("%d, %.4f, %.4f, %.4f", global_state.motion.value, 0, 0, dz)
+    controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, 0, 0, dz)
     irc5.move_rel_frame(0, 0, dz)
 
 def state_machine():
@@ -145,7 +163,7 @@ def state_machine():
     elif global_state.motion == MotionState.DESCEND:
         descend()
     elif global_state.motion == MotionState.FIND_DEPTH and time_interval >= PENCIL_MOVE_RATE:
-        set_robot_speed(DEPTH_SPEED)
+        set_robot_speed(FIND_DEPTH_SPEED)
         find_depth()
         state_last_time = current_time
     elif global_state.motion == MotionState.ASCEND:
@@ -192,7 +210,7 @@ def move_xyz_target():
 
 def find_init_tags(): 
     global global_state
-    if not camera_buffer and not conveyor_state.running:
+    if not correction_buffer:
         irc5.run_conveyor()
         conveyor_state.running = True
     else:
@@ -200,6 +218,7 @@ def find_init_tags():
         conveyor_state.running = False
         global_state.motion = MotionState.FIND_TARGET
         event_logger.info("Tags Found")
+        global_state.robot_config.init_est_z = correction_buffer[-1].dz
         return
 
 if __name__ == "__main__":
