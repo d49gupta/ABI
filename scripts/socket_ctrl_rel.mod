@@ -25,6 +25,7 @@ MODULE socket_comms
     ! TASK PERS tooldata toolBladeTest := [TRUE, [[1.19, 1.1, 334.77], [1, 0, 0, 0]], [0.653, [11.99, -33.41, -0.98], [1, 0, 0, 0], 0, 0, 0]];
     TASK PERS tooldata toolBladeTest := [TRUE, [[0, 0, 296.30], [1, 0, 0, 0]], [1.927, [4.838, 0.915, -156.08], [1, 0, 0, 0], 0, 0, 0]];
     VAR speeddata speed_var := [5, 50, 5000, 1000];
+    VAR zonedata move_zone;
     VAR num index := 1;
     
     PERS pose uframe_test := [[0, 0, 0],[1, 0, 0, 0]];
@@ -120,7 +121,18 @@ MODULE socket_comms
     ENDPROC
 
     PROC MOVE_REL()
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, fine, toolBladeTest;
+        ! Zone follows speed: slow (careful, near-contact) moves get an exact
+        ! stop so the socket loop checks in after every step; fast moves get
+        ! a blending zone so consecutive corrections can flow into each other
+        ! instead of fully stopping each time.
+        IF speed_var.v_tcp <= 5 THEN
+            move_zone := fine;
+        ELSEIF speed_var.v_tcp <= 15 THEN
+            move_zone := z1;
+        ELSE
+            move_zone := z5;
+        ENDIF
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, move_zone, toolBladeTest;
         !WaitRob\InPos;
     ENDPROC
     

@@ -45,6 +45,7 @@ def find_target():
 
 def descend():
     # Main loop will trigger pencil interrupt to go into next state
+    set_robot_speed(DESCENT_SPEED)
     dx = Kp_descent * sensors.correction.dx
     dy = Kp_descent * sensors.correction.dy
     dz = -2.0 # TODO: Change this to use Kp_descent * sensors.correct.dz from height estimate
@@ -163,7 +164,6 @@ def state_machine():
     elif global_state.motion == MotionState.DESCEND:
         descend()
     elif global_state.motion == MotionState.FIND_DEPTH and time_interval >= PENCIL_MOVE_RATE:
-        set_robot_speed(FIND_DEPTH_SPEED)
         find_depth()
         state_last_time = current_time
     elif global_state.motion == MotionState.ASCEND:
