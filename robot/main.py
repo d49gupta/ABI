@@ -39,12 +39,9 @@ def find_target():
         dx = Kp_target * smooth_dx
         dy = Kp_target * smooth_dy
 
-        t = 0
-        if global_state.robot_config.init_est_xy > 0:
-            correction_magnitude = math.sqrt(smooth_dx*smooth_dx + smooth_dy*smooth_dy)
-            t = max(0, min(1, correction_magnitude / global_state.robot_config.init_est_xy))
-
-        speed = DESCENT_SPEED + (ASCENT_SPEED - DESCENT_SPEED) * t
+        correction_magnitude = math.sqrt(smooth_dx*smooth_dx + smooth_dy*smooth_dy)
+        t = max(0, min(1, correction_magnitude / 100))
+        speed = DESCENT_SPEED + (FIND_TARGET_SPEED - DESCENT_SPEED) * t
         set_robot_speed(speed)
 
         controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, 0.0)
@@ -71,10 +68,7 @@ def descend_v2():
     dy = Kp_descent * sensors.correction.dy
     dz = -Kp_descent * sensors.correction.dz
 
-    t = 0
-    if global_state.robot_config.init_est_z > 0:
-        t = max(0, min(1, sensors.correction.dz / global_state.robot_config.init_est_z))
-
+    t = max(0, min(1, sensors.correction.dz / 100))
     speed = FIND_DEPTH_SPEED + (FIND_TARGET_SPEED - FIND_DEPTH_SPEED) * t
     set_robot_speed(speed)
     controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, dz)
@@ -179,7 +173,7 @@ def state_machine():
     if global_state.motion == MotionState.FIND_TARGET:
         find_target()
     elif global_state.motion == MotionState.DESCEND:
-        descend()
+        descend_v2()
     elif global_state.motion == MotionState.FIND_DEPTH and time_interval >= PENCIL_MOVE_RATE:
         find_depth()
         state_last_time = current_time

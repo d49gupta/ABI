@@ -21,6 +21,7 @@ MODULE socket_comms
     VAR string recv_buffer := "";
     VAR bool pending_move := FALSE;
     CONST num RECV_TIMEOUT := 5; ! seconds with no data at all before SocketReceive errors
+    CONST num MAX_RECV_BUFFER_LEN := 78;
     ! TASK PERS tooldata toolBladeTest:=[TRUE,[[69.2101,26.486,370.055],[0.204128,0.252974,0.0546959,-0.94411]],[3.613,[11,9.9,94.7],[1,0,0,0],0.017,0.018,0.005]];
     ! TASK PERS tooldata toolBladeTest := [TRUE, [[1.19, 1.1, 334.77], [1, 0, 0, 0]], [0.653, [11.99, -33.41, -0.98], [1, 0, 0, 0], 0, 0, 0]];
     TASK PERS tooldata toolBladeTest := [TRUE, [[0, 0, 296.30], [1, 0, 0, 0]], [1.927, [4.838, 0.915, -156.08], [1, 0, 0, 0], 0, 0, 0]];
@@ -32,15 +33,15 @@ MODULE socket_comms
     PERS wobjdata test_wobj := [FALSE, FALSE, "CNV1", [[0, 0, 0],[1, 0, 0, 0]],[[0, 0, 0],[1, 0, 0, 0]]];
     
     ! 4 point calibration
-    PERS robtarget Point1 := [[393.502,-3.39382,-861.45],[0.000212606,-0.965936,-0.258777,0.00110227],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1372.54]];
-    PERS robtarget Point2 := [[502.345,-2.87438,-862.37],[0.000228094,0.96596,0.258692,0.000782558],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1481.3]];
-    PERS robtarget Point3 := [[557.874,-2.59812,-862.78],[0.000502056,0.965943,0.258745,0.00244777],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1536.95]];
-    PERS robtarget Point4 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
+    PERS robtarget Point1 := [[596.645,19.5059,-960.491],[0.00294902,-0.966034,-0.258397,-0.00117568],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point2 := [[596.6,19.4354,-961.638],[0.00302081,-0.966053,-0.258323,-0.000899574],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point3 := [[596.6,19.4337,-961.647],[0.00302404,-0.966051,-0.258332,-0.000882978],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point4 := [[596.612,19.4355,-961.649],[0.00302244,-0.966051,-0.258332,-0.000892225],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
     
     ! 3 point calibration
-    PERS robtarget Point5 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
-    PERS robtarget Point6 := [[498.283,1.76193,-862.465],[0.000431789,0.965854,0.25908,0.00197032],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1475.83]];
-    PERS robtarget Point7 := [[556.059,2.01758,-863.069],[0.000678125,0.96582,0.25919,0.00335087],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1533.1]];
+    PERS robtarget Point5 := [[835.313,291.229,80.7191],[0.00166374,-0.96628,-0.25742,-0.00597274],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point6 := [[835.316,291.225,80.7196],[0.00165951,-0.966282,-0.257413,-0.00597404],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point7 := [[835.313,291.226,80.7195],[0.00166101,-0.966282,-0.257411,-0.00597221],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
     
     PROC openSocket()
         ActUnit CNV1;
@@ -54,12 +55,12 @@ MODULE socket_comms
         
     PROC Send()
         current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
-
-        pose_msg := ValToStr(current_pose.trans.x) + "," +
-                    ValToStr(current_pose.trans.y) + "," +
-                    ValToStr(current_pose.trans.z) + "," +
-                    ValToStr(current_pose.extax.eax_f) + "," +
-                    ValToStr(speed_var.v_tcp);
+    
+        pose_msg := NumToStr(current_pose.trans.x, 2) + "," +
+                    NumToStr(current_pose.trans.y, 2) + "," +
+                    NumToStr(current_pose.trans.z, 2) + "," +
+                    NumToStr(current_pose.extax.eax_f, 2) + "," +
+                    NumToStr(speed_var.v_tcp, 2);
         send_msg := pose_msg + "\0A";
         SocketSend client_socket \Str:=send_msg;
     ENDPROC
@@ -68,19 +69,24 @@ MODULE socket_comms
         VAR intnum nl_pos;
     
         SocketReceive client_socket \Str:=received_msg \Time:=RECV_TIMEOUT;
-        recv_buffer := recv_buffer + received_msg;
+        IF StrLen(recv_buffer) + StrLen(received_msg) > MAX_RECV_BUFFER_LEN THEN
+            TPWrite "recv_buffer overflow (" + NumToStr(StrLen(recv_buffer) + StrLen(received_msg), 0) + " chars), clearing";
+            recv_buffer := "";
+        ELSE
+            recv_buffer := recv_buffer + received_msg;
+        ENDIF
     
         nl_pos := StrFind(recv_buffer, 1, "\0A");
         WHILE nl_pos <= StrLen(recv_buffer) AND nl_pos > 0 DO
             DispatchMessage(StrPart(recv_buffer, 1, nl_pos - 1));
-            
+    
             ! Check if there are remaining characters after the newline
             IF nl_pos < StrLen(recv_buffer) THEN
                 recv_buffer := StrPart(recv_buffer, nl_pos + 1, StrLen(recv_buffer) - nl_pos);
             ELSE
                 recv_buffer := "";
             ENDIF
-            
+    
             nl_pos := StrFind(recv_buffer, 1, "\0A");
         ENDWHILE
     
@@ -89,15 +95,22 @@ MODULE socket_comms
             MOVE_REL;
         ENDIF
     
-    ERROR
-        TPWrite "Receive ERROR, ERRNO=" + NumToStr(ERRNO, 0);
-        RAISE;
+        ERROR
+            IF ERRNO = ERR_SOCK_TIMEOUT THEN
+                RETRY;
+            ENDIF
+            TPWrite "Receive ERROR, ERRNO=" + NumToStr(ERRNO, 0);
+            RAISE;
     ENDPROC
 
     PROC DispatchMessage(string msg)
         comma_index := StrFind(msg, 1, ",");
-        id_str := StrPart(msg, 1, comma_index - 1);
-        good_command := StrToVal(id_str, command_id);
+        IF comma_index > 1 THEN
+            id_str := StrPart(msg, 1, comma_index - 1);
+            good_command := StrToVal(id_str, command_id);
+        ELSE
+            good_command := FALSE;
+        ENDIF
 
         IF good_command THEN
             TEST command_id
@@ -142,7 +155,7 @@ MODULE socket_comms
             move_zone := z5;
         ENDIF
         ConfL \Off;
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, move_zone, toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, fine, toolBladeTest;
         !WaitRob\InPos;
     ENDPROC
     
