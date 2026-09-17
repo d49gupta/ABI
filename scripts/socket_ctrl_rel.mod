@@ -12,30 +12,30 @@ MODULE socket_comms
     CONST num RECV_TIMEOUT := 5; ! seconds with no data at all before SocketReceive errors
     CONST num MSG_IN_LEN := 16;  ! bytes: cmd_id, f1, f2, f3 as float32 each
     TASK PERS tooldata toolBladeTest := [TRUE, [[0, 0, 296.30], [1, 0, 0, 0]], [1.927, [4.838, 0.915, -156.08], [1, 0, 0, 0], 0, 0, 0]];
-    VAR speeddata speed_var := [5, 50, 5000, 1000]
+    VAR speeddata speed_var := [5, 50, 5000, 1000];
     VAR zonedata move_zone;
     VAR num index := 1;
 
-    PERS pose uframe_test := [[0, 0, 0],[1, 0, 0,
+    PERS pose uframe_test := [[0, 0, 0],[1, 0, 0, 0]];
     PERS wobjdata test_wobj := [FALSE, FALSE, "CNV1", [[0, 0, 0],[1, 0, 0, 0]],[[0, 0, 0],[1, 0, 0, 0]]];
 
     ! 4 point calibration
-    PERS robtarget Point1 :=[[393.502,-3.39382,-861.45],[0.000212606,-0.965936,-0.258777,0.00110227],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1372.54]];
-    PERS robtarget Point2 :=[[502.345,-2.87438,-862.37],[0.000228094,0.96596,0.258692,0.000782558],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1481.3]];
-    PERS robtarget Point3 :=[[557.874,-2.59812,-862.78],[0.000502056,0.965943,0.258745,0.00244777],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1536.95]];
-    PERS robtarget Point4 :=[[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
+    PERS robtarget Point1 := [[393.502,-3.39382,-861.45],[0.000212606,-0.965936,-0.258777,0.00110227],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1372.54]];
+    PERS robtarget Point2 := [[502.345,-2.87438,-862.37],[0.000228094,0.96596,0.258692,0.000782558],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1481.3]];
+    PERS robtarget Point3 := [[557.874,-2.59812,-862.78],[0.000502056,0.965943,0.258745,0.00244777],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1536.95]];
+    PERS robtarget Point4 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
 
     ! 3 point calibration
-    PERS robtarget Point5 :=[[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
-    PERS robtarget Point6 :=[[498.283,1.76193,-862.465],[0.000431789,0.965854,0.25908,0.00197032],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1475.83]];
-    PERS robtarget Point7 :=[[556.059,2.01758,-863.069],[0.000678125,0.96582,0.25919,0.00335087],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1533.1]];
+    PERS robtarget Point5 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
+    PERS robtarget Point6 := [[498.283,1.76193,-862.465],[0.000431789,0.965854,0.25908,0.00197032],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1475.83]];
+    PERS robtarget Point7 := [[556.059,2.01758,-863.069],[0.000678125,0.96582,0.25919,0.00335087],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1533.1]];
 
     PROC openSocket()
         ActUnit CNV1;
         ClearWobj;
-        target_pose := CRobT(\Tool:=toolBladeTest ool0
+        target_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0); ! Default is tool0
         SocketCreate server_socket;
-        SocketBind server_socket, client_real_ip,
+        SocketBind server_socket, client_real_ip, 4000;
         SocketListen server_socket;
         SocketAccept server_socket, client_socket;
     ENDPROC
@@ -45,13 +45,13 @@ MODULE socket_comms
         current_pose := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
 
         ClearRawBytes send_buf;
-        PackRawBytes current_pose.trans.x, send_bu\Float4;
+        PackRawBytes current_pose.trans.x, send_buf, RawBytesLen(send_buf) + 1 \Float4;
         PackRawBytes current_pose.trans.y, send_buf, RawBytesLen(send_buf) + 1 \Float4;
-        PackRawBytes current_pose.trans.z, send_bu\Float4;
+        PackRawBytes current_pose.trans.z, send_buf, RawBytesLen(send_buf) + 1 \Float4;
         PackRawBytes current_pose.extax.eax_f, send_buf, RawBytesLen(send_buf) + 1 \Float4;
-        PackRawBytes speed_var.v_tcp, send_buf, Rat4;
+        PackRawBytes speed_var.v_tcp, send_buf, RawBytesLen(send_buf) + 1 \Float4;
 
-        SocketSend client_socket \RawData:=send_bu
+        SocketSend client_socket \RawData:=send_buf;
     ENDPROC
 
     PROC Receive()
@@ -61,9 +61,9 @@ MODULE socket_comms
         VAR num fy;
         VAR num fz;
 
-        SocketReceive client_socket \RawData:=recvEN \Time:=RECV_TIMEOUT;
+        SocketReceive client_socket \RawData:=recv_buf \ReadNoOfBytes:=MSG_IN_LEN \Time:=RECV_TIMEOUT;
 
-        UnpackRawBytes recv_buf, 1, cmd_id \Float4
+        UnpackRawBytes recv_buf, 1, cmd_id \Float4;
         UnpackRawBytes recv_buf, 5, fx \Float4;
         UnpackRawBytes recv_buf, 9, fy \Float4;
         UnpackRawBytes recv_buf, 13, fz \Float4;
@@ -79,11 +79,11 @@ MODULE socket_comms
             IF ERRNO = ERR_SOCK_TIMEOUT THEN
                 RETRY;
             ENDIF
-            TPWrite "Receive ERROR, ERRNO=" + NumT
+            TPWrite "Receive ERROR, ERRNO=" + NumToStr(ERRNO, 0);
             RAISE;
     ENDPROC
 
-    PROC DispatchMessage(num cmd_id, num fx, num f
+    PROC DispatchMessage(num cmd_id, num fx, num fy, num fz)
         TEST Round(cmd_id)
             CASE 1:
                 move_data.x := fx;
@@ -121,7 +121,7 @@ MODULE socket_comms
             move_zone := z5;
         ENDIF
         ConfL \Off;
-        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObdata.y, move_data.z), speed_var, move_zone,toolBladeTest;
+        MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, move_zone, toolBladeTest;
     ENDPROC
 
     PROC closeSocket()
@@ -130,7 +130,7 @@ MODULE socket_comms
     ENDPROC
 
     PROC MOVE_CONVEYOR()
-        ErrWRite\I,"Turning On CNV ","Turning On C
+        ErrWRite\I,"Turning On CNV ","Turning On CNV";
         Set do_CNV_Fwd;
     ENDPROC
 
@@ -142,7 +142,7 @@ MODULE socket_comms
     PROC RECORD_POINT()
         WaitRob\InPos;
         current_pose_world := CRobT(\Tool:=toolBladeTest \WObj:=wobj0);
-        current_pose_conveyor := CRobT(\Tool:=tool
+        current_pose_conveyor := CRobT(\Tool:=toolBladeTest \WObj:=test_wobj);
         IF index = 1 THEN
             Point1 := current_pose_world;
         ELSEIF index = 2 THEN
