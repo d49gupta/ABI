@@ -41,7 +41,7 @@ def find_target():
 
         correction_magnitude = math.sqrt(smooth_dx*smooth_dx + smooth_dy*smooth_dy)
         t = max(0, min(1, correction_magnitude / 100))
-        speed = DESCENT_SPEED + (FIND_TARGET_SPEED - DESCENT_SPEED) * t
+        speed = DESCENT_SPEED + int((FIND_TARGET_SPEED - DESCENT_SPEED) * t)
         set_robot_speed(speed)
 
         controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, 0.0)
@@ -69,7 +69,7 @@ def descend_v2():
     dz = -Kp_descent * sensors.correction.dz
 
     t = max(0, min(1, sensors.correction.dz / 100))
-    speed = FIND_DEPTH_SPEED + (FIND_TARGET_SPEED - FIND_DEPTH_SPEED) * t
+    speed = FIND_DEPTH_SPEED + int((FIND_TARGET_SPEED - FIND_DEPTH_SPEED) * t)
     set_robot_speed(speed)
     controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, dz)
     irc5.move_rel_frame(dx, dy, dz)
@@ -304,9 +304,9 @@ if __name__ == "__main__":
             if pencil_buffer and pencil_buffer[-1].active:
                 if global_state.motion.value < MotionState.FIND_DEPTH.value:
                     global_state.motion = MotionState.FIND_DEPTH
+                    print("Pencil Detected. Switching to FIND_DEPTH mode.")
                     event_logger.info("Pencil Detected. Switching to FIND_DEPTH mode.")
                     record_target()
-                    print("Pencil Detected. Switching to FIND_DEPTH mode.")
 
             state_machine()
 

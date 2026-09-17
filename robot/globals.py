@@ -121,14 +121,14 @@ Z_TARGET_ACC = 0.1
 ASCENT_HEIGHT_DIFF = 5.0 # Diff between initial and ascent height
 PENCIL_Z_OFFSET = 55.5 # mm between camera and pencil sensor on z axis
 ROBOT_PUBLISH_RATE = 0.1
-MOVE_DEADBAND_MM = 0.2 # suppress a MOVE_REL send if correction magnitude less than threshold
+MOVE_DEADBAND_MM = 0.0 # suppress a MOVE_REL send if correction magnitude less than threshold
 PENCIL_MOVE_RATE = 1.0 # slow movement of while in FIND_DEPTH state to not damange sensor
 CONVEYOR_MOVE_TIME = 1.5
 
-ASCENT_SPEED = 30.0
+ASCENT_SPEED = 50.0
 FIND_DEPTH_SPEED = 1.0
 DESCENT_SPEED = 5.0
-FIND_TARGET_SPEED = 10.0
+FIND_TARGET_SPEED = 20.0
 
 # --- VISUALS --- 
 canvas = np.zeros((WINDOW_HEIGHT, WINDOW_WIDTH, 3), dtype=np.uint8)
