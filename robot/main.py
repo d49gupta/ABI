@@ -3,6 +3,7 @@ from robot.globals import *
 import time
 import cv2
 import sys
+import math
 
 RUN_MODE = "full" # "three", "four", or "full" -- set from argv in __main__
 
@@ -37,6 +38,15 @@ def find_target():
     if magnitude > XY_TARGET_ACC or conveyor_state.running:
         dx = Kp_target * smooth_dx
         dy = Kp_target * smooth_dy
+
+        t = 0
+        if global_state.robot_config.init_est_xy > 0:
+            correction_magnitude = math.sqrt(smooth_dx*smooth_dx + smooth_dy*smooth_dy)
+            t = max(0, min(1, correction_magnitude / global_state.robot_config.init_est_xy))
+
+        speed = DESCENT_SPEED + (ASCENT_SPEED - DESCENT_SPEED) * t
+        set_robot_speed(speed)
+
         controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, 0.0)
         irc5.move_rel_frame(dx, dy, 0.0)
     else:
@@ -115,7 +125,9 @@ def ascend():
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
         print("Ascent Complete")
         event_logger.info("Ascent Complete")
-        global_state.robot_config.init_est_z = correction_buffer[-1].dz
+        correction = correction_buffer[-1]
+        global_state.robot_config.init_est_xy = math.sqrt(correction.dx * correction.dx + correction.dy * correction.dy)
+        global_state.robot_config.init_est_z = correction.dz
 
         if global_state.calibration.value == CalibrationMode.FOUR_POINT.value:
             if len(global_state.recorded_points) >= 4:
@@ -165,7 +177,6 @@ def state_machine():
     time_interval = current_time - state_last_time
 
     if global_state.motion == MotionState.FIND_TARGET:
-        set_robot_speed(FIND_TARGET_SPEED)
         find_target()
     elif global_state.motion == MotionState.DESCEND:
         descend()

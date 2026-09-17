@@ -79,7 +79,8 @@ def move_rel_frame(dx, dy, dz, override_cmd=False):
     global_state.robot_config.last_dx = dx
     global_state.robot_config.last_dy = dy
     global_state.robot_config.last_dz = dz
-    command = f"1, {dx}, {dy}, {dz}"
+    
+    command = f"1,{-dx:.2f},{-dy:.2f},{dz:.2f}"
     _send_command(command)
 
 def stop_robot():
@@ -91,7 +92,7 @@ def set_speed(v_tcp):
     _send_command(command)
 
 def move_robot_frame(x, y, z):
-    command = f"3, {x}, {y}, {z}"
+    command = f"3,{-x:.2f},{-y:.2f},{z:.2f}"
     _send_command(command)
 
 def yaw_robot(angle):
@@ -125,7 +126,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            move_rel_frame(10, 0, 0)
+            move_rel_frame(10, 0, 0, True)
             print(f"Current Position: {robot_state.pos}, Conveyor Axis: {robot_state.conveyor_axis}, Speed: {robot_state.reported_speed}")
     except KeyboardInterrupt:
         print("Shutting down...")

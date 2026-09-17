@@ -63,26 +63,35 @@ MODULE socket_comms
         send_msg := pose_msg + "\0A";
         SocketSend client_socket \Str:=send_msg;
     ENDPROC
-    
+        
     PROC Receive()
         VAR intnum nl_pos;
-
-        ! Append whatever was cut off last time until end character
+    
         SocketReceive client_socket \Str:=received_msg \Time:=RECV_TIMEOUT;
         recv_buffer := recv_buffer + received_msg;
-
-        ! iterate through all instances of end character for concated messages
+    
         nl_pos := StrFind(recv_buffer, 1, "\0A");
-        WHILE nl_pos <= StrLen(recv_buffer) DO
+        WHILE nl_pos <= StrLen(recv_buffer) AND nl_pos > 0 DO
             DispatchMessage(StrPart(recv_buffer, 1, nl_pos - 1));
-            recv_buffer := StrPart(recv_buffer, nl_pos + 1, StrLen(recv_buffer) - nl_pos);
+            
+            ! Check if there are remaining characters after the newline
+            IF nl_pos < StrLen(recv_buffer) THEN
+                recv_buffer := StrPart(recv_buffer, nl_pos + 1, StrLen(recv_buffer) - nl_pos);
+            ELSE
+                recv_buffer := "";
+            ENDIF
+            
             nl_pos := StrFind(recv_buffer, 1, "\0A");
         ENDWHILE
-
+    
         IF pending_move THEN
             pending_move := FALSE;
             MOVE_REL;
         ENDIF
+    
+    ERROR
+        TPWrite "Receive ERROR, ERRNO=" + NumToStr(ERRNO, 0);
+        RAISE;
     ENDPROC
 
     PROC DispatchMessage(string msg)
@@ -132,6 +141,7 @@ MODULE socket_comms
         ELSE
             move_zone := z5;
         ENDIF
+        ConfL \Off;
         MoveL Offs(CRobT(\Tool:=toolBladeTest \WObj:=wobj0), move_data.x, move_data.y, move_data.z), speed_var, move_zone, toolBladeTest;
         !WaitRob\InPos;
     ENDPROC
