@@ -72,6 +72,7 @@ class RobotConfig:
     timeout: float = 30.0 # adjust timeout as needed, maybe make it non-blocking with select instead
     connected: bool = False
     msg_count: int = 0
+    last_acked_msg_count: int = 0
     robot_file = None
     read_thread = None
     stop_trigger = None
