@@ -88,18 +88,12 @@ def move_rel_frame(dx, dy, dz, override_cmd=False):
     if global_state.robot_config.msg_count == global_state.robot_config.last_acked_msg_count:
         return
 
-    # only send if correction magnitude is significant enough
-    ddx = dx - global_state.robot_config.last_dx
-    ddy = dy - global_state.robot_config.last_dy
-    ddz = dz - global_state.robot_config.last_dz
-    magnitude = (ddx**2 + ddy**2 + ddz**2) ** 0.5
+    # only send if the requested correction itself is significant enough to bother moving
+    magnitude = (dx**2 + dy**2 + dz**2) ** 0.5
     if magnitude < MOVE_DEADBAND_MM and not override_cmd:
         return
 
     global_state.robot_config.last_time = current_time
-    global_state.robot_config.last_dx = dx
-    global_state.robot_config.last_dy = dy
-    global_state.robot_config.last_dz = dz
     global_state.robot_config.last_acked_msg_count = global_state.robot_config.msg_count
 
     _send_command(1, -dx, -dy, dz)

@@ -77,9 +77,6 @@ class RobotConfig:
     read_thread = None
     stop_trigger = None
     last_time = None
-    last_dx: float = 0.0
-    last_dy: float = 0.0
-    last_dz: float = 0.0
     initial_pos : np.ndarray = None
     tcp_speed: float = 5.0
     init_est_xy: float = 0.0
