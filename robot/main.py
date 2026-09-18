@@ -150,7 +150,12 @@ def ascend():
 
         elif global_state.calibration.value == CalibrationMode.THREE_POINT.value:
             global_state.motion = MotionState.FIND_TARGET
-            if global_state.three_point == ThreePointState.FIND_X:
+            if global_state.three_point == ThreePointState.FIND_CENTER:
+                global_state.set_target(ThreePointState.FIND_X)
+                print("FINDING X TARGET")
+                event_logger.info("FINDING X TARGET")
+                time.sleep(1.0)
+            elif global_state.three_point == ThreePointState.FIND_X:
                 global_state.set_target(ThreePointState.FIND_Y)
                 print("FINDING Y TARGET")
                 event_logger.info("FINDING Y TARGET")
