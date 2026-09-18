@@ -75,7 +75,7 @@ int main()
     // pass in radius of corner tags, center tag, estimated offset in tag radius units
     // float tag_size_corners, float tag_size_center, float tag_size_side, float offset, float side_offset
     // AprilTagDetector detector(22.5, 11.5, 2.375);	    
-    AprilTagDetector detector(11.25, 11.25, 5.8);	    
+    AprilTagDetector detector(11.25, 11.25, 5.3);	    
     P10DLB binaryPencil;
 
     int width = 640;
