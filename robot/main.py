@@ -79,7 +79,7 @@ def record_target():
         robot_pos = robot_pose_buffer[-1].pos.copy()
         global_state.recorded_points.append(robot_pos)
         irc5.record_target()
-        event_logger.info("Calibration point found at:  %.4f,  %.4f,  %.4f", robot_pos[0], robot_pos[1], robot_pos[2])
+        event_logger.info("Calibration point found at,  %.4f,  %.4f,  %.4f", robot_pos[0], robot_pos[1], robot_pos[2])
         time.sleep(1.0)
     else:
         event_logger.error("Unable to store final robot position")
