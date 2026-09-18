@@ -6,6 +6,8 @@ import sys
 import math
 
 RUN_MODE = "full" # "three", "four", or "full" -- set from argv in __main__
+ITERATIONS = 5
+CURRENT_ITERATIONS = 0
 
 def set_robot_speed(speed):
     global global_state
@@ -114,6 +116,12 @@ def ascend():
         event_logger.warning("No robot data available")
         return
 
+    if CURRENT_ITERATIONS >= ITERATIONS:
+        print("All iterations complete. Transitioning to IDLE.")
+        global_state.set_target(ThreePointState.IDLE)
+        global_state.motion = MotionState.IDLE
+        return
+
     ascent_diff = global_state.robot_config.initial_pos[2] - robot_pose_buffer[-1].pos[2]
 
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
@@ -161,8 +169,9 @@ def ascend():
                 event_logger.info("FINDING Y TARGET")
                 time.sleep(1.0)
             else:
-                global_state.set_target(ThreePointState.IDLE)
-                global_state.motion = MotionState.IDLE
+                global_state.calibration = CalibrationMode.FOUR_POINT
+                global_state.set_target(ThreePointState.FIND_CENTER)
+                global_state.motion = MotionState.FIND_TARGET
         
         return
 

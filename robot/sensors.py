@@ -105,21 +105,30 @@ def receiveCamera(payload):
     scale_list = []
     z_list = []
 
-    for tag in tags:
-        x = int(tag["x"])
-        y = int(tag["y"])
-        tag_id = tag["id"]
+    if show:
+        with canvas_lock:
+            for tag in tags:
+                x = int(tag["x"])
+                y = int(tag["y"])
+                tag_id = tag["id"]
 
-        scale_list.append(float(tag["scale"]))
-        cx_list.append(tag["center_x"])
-        cy_list.append(tag["center_y"])
-        z_list.append(tag["est_z"])
+                scale_list.append(float(tag["scale"]))
+                cx = int(tag["center_x"])
+                cy = int(tag["center_y"])
+                cx_list.append(cx)
+                cy_list.append(cy)
+                z_list.append(tag["est_z"])
 
-        if show:
-            with canvas_lock:
+                # 1. Draw Tag Center Point & ID
                 cv2.circle(canvas, (x, y), 8, (0, 255, 0), -1)
                 cv2.putText(canvas, f"ID: {tag_id}", (x + 10, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 255, 255), 1)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+
+                # 2. Draw Tag-Specific Center Estimate & Connecting Line
+                cv2.circle(canvas, (cx, cy), 4, (255, 255, 0), -1) # Yellow estimation point
+                cv2.line(canvas, (x, y), (cx, cy), (255, 255, 0), 1, lineType=cv2.LINE_AA)
+                cv2.putText(canvas, f"Est #{tag_id}", (cx + 5, cy - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 0), 1)
 
     if num_tags > 0:
         avg_cx = statistics.mean(cx_list)
@@ -157,19 +166,24 @@ def receiveCamera(payload):
 
         if show:
             with canvas_lock:
+                fused_center = (curr_camera_sample.center_x, curr_camera_sample.center_y)
+                
+                for tag, cx, cy in zip(tags, cx_list, cy_list):
+                    cv2.line(canvas, (cx, cy), fused_center, (0, 165, 255), 1, cv2.LINE_AA)
+
                 cv2.circle(canvas, (projected_x, projected_y), 5, (255, 0, 255), -1)
                 cv2.putText(canvas, "TIP", (projected_x + 10, projected_y - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.2, (255, 0, 255), 1)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 255), 1)
                 
-                cv2.circle(canvas, (curr_camera_sample.center_x, curr_camera_sample.center_y), 12, (0, 0, 255), 2)
-                cv2.circle(canvas, (curr_camera_sample.center_x, curr_camera_sample.center_y), 4, (0, 0, 255), -1)
+                # Fused Average Target Center
+                cv2.circle(canvas, fused_center, 12, (0, 0, 255), 2)
+                cv2.circle(canvas, fused_center, 4, (0, 0, 255), -1)
+                
                 inv_scale = 1 / avg_scale
-                cv2.putText(canvas, f"TARGET CENTER: {inv_scale:.2f} pixel/mm", (curr_camera_sample.center_x + 15, curr_camera_sample.center_y + 5),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                cv2.putText(canvas, f"FUSED CENTER: {inv_scale:.2f} px/mm", (fused_center[0] + 15, fused_center[1] + 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                 cv2.putText(canvas, f"ESTIMATED DEPTH: {avg_dz:.2f} mm", (75, 75),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-
-        # print(f"Received {num_tags} tags. Center: ({avg_cx if num_tags > 0 else 0}, {avg_cy if num_tags > 0 else 0})")
     else:
         camera_logger.warning("No detected tags")
 
@@ -193,7 +207,8 @@ def open_sensors(mode: str = "four-point"):
     state.subscriber.client.publish(state.subscriber.pi_start_topic, mode)
 
 if __name__ == "__main__":
-    state.calibration = CalibrationMode.FOUR_POINT
+    state.calibration = CalibrationMode.THREE_POINT
+    state.set_target(ThreePointState.FIND_Y)
     connect_sensors()
     start_sensors()
     open_sensors()
