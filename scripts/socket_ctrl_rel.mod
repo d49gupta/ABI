@@ -25,15 +25,15 @@ MODULE socket_comms
     PERS wobjdata test_wobj := [FALSE, FALSE, "CNV1", [[0, 0, 0],[1, 0, 0, 0]],[[0, 0, 0],[1, 0, 0, 0]]];
 
     ! 4 point calibration
-    PERS robtarget Point1 := [[393.502,-3.39382,-861.45],[0.000212606,-0.965936,-0.258777,0.00110227],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1372.54]];
-    PERS robtarget Point2 := [[502.345,-2.87438,-862.37],[0.000228094,0.96596,0.258692,0.000782558],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1481.3]];
-    PERS robtarget Point3 := [[557.874,-2.59812,-862.78],[0.000502056,0.965943,0.258745,0.00244777],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1536.95]];
-    PERS robtarget Point4 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
+    PERS robtarget Point1 := [[368.352,34.0767,-956.827],[0.000920573,0.965966,0.258666,-0.000688489],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point2 := [[368.331,34.0901,-956.693],[0.000773514,0.965941,0.258762,-0.000601926],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point3 := [[368.435,33.9281,-956.709],[0.000363296,0.96592,0.258839,-0.00113627],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point4 := [[368.441,33.8682,-956.773],[0.00028639,0.965872,0.259019,-0.000901493],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
 
     ! 3 point calibration
-    PERS robtarget Point5 := [[616.88,-2.4332,-863.34],[0.000588622,0.965938,0.258749,0.00347404],[-1,-1,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1596.06]];
-    PERS robtarget Point6 := [[498.283,1.76193,-862.465],[0.000431789,0.965854,0.25908,0.00197032],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1475.83]];
-    PERS robtarget Point7 := [[556.059,2.01758,-863.069],[0.000678125,0.96582,0.25919,0.00335087],[0,0,1,1],[9E+09,9E+09,9E+09,9E+09,9E+09,1533.1]];
+    PERS robtarget Point5 := [[607.132,306.098,83.1973],[0.00164695,0.96611,0.25809,0.00417494],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point6 := [[660.685,305.53,81.667],[0.00162666,0.966068,0.258244,0.00441283],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
+    PERS robtarget Point7 := [[608.48,357.725,81.69],[0.0022396,0.966065,0.258246,0.00478736],[0,0,-3,1],[9E+09,9E+09,9E+09,9E+09,9E+09,0]];
 
     PROC openSocket()
         ActUnit CNV1;
@@ -72,25 +72,23 @@ MODULE socket_comms
     PROC Receive()
         VAR bool got_one := FALSE;
 
-        ! Drain the socket: keep reading fixed-size messages as long as they're
-        ! already queued up, so only the newest one is ever acted on. A timeout
-        ! just means "nothing more waiting right now" and ends the drain.
+        ! Drain the socket, dispatching every queued message as it's read (not just
+        ! the last one) so a SetSpeed command isn't silently discarded by a MoveRel
+        ! that arrived right behind it in the same drain pass. Only the final move
+        ! target actually gets executed, once, after the drain completes.
         WHILE TryReceiveOne() DO
             got_one := TRUE;
-        ENDWHILE
-
-        IF got_one THEN
             UnpackRawBytes recv_buf, 1, cmd_id \Float4;
             UnpackRawBytes recv_buf, 5, fx \Float4;
             UnpackRawBytes recv_buf, 9, fy \Float4;
             UnpackRawBytes recv_buf, 13, fz \Float4;
 
             DispatchMessage cmd_id, fx, fy, fz;
+        ENDWHILE
 
-            IF pending_move THEN
-                pending_move := FALSE;
-                MOVE_REL;
-            ENDIF
+        IF got_one AND pending_move THEN
+            pending_move := FALSE;
+            MOVE_REL;
         ENDIF
     ENDPROC
 

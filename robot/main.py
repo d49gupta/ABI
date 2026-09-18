@@ -69,7 +69,7 @@ def descend_v2():
     dz = -Kp_descent * sensors.correction.dz
 
     t = max(0, min(1, sensors.correction.dz / 100))
-    speed = FIND_DEPTH_SPEED + int((FIND_TARGET_SPEED - FIND_DEPTH_SPEED) * t)
+    speed = FIND_DEPTH_SPEED + int((ASCENT_SPEED - FIND_DEPTH_SPEED) * t)
     set_robot_speed(speed)
     controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, dx, dy, dz)
     irc5.move_rel_frame(dx, dy, dz)
@@ -113,7 +113,7 @@ def ascend():
     if not robot_pose_buffer:
         event_logger.warning("No robot data available")
         return
-    
+
     ascent_diff = global_state.robot_config.initial_pos[2] - robot_pose_buffer[-1].pos[2]
 
     if abs(ascent_diff) < ASCENT_HEIGHT_DIFF:
@@ -161,6 +161,7 @@ def ascend():
         
         return
 
+    set_robot_speed(ASCENT_SPEED)
     dz = Kp_ascent * ascent_diff
     controller_logger.info("%d, %.4f, %.4f, %.4f, %.4f", global_state.motion.value, global_state.robot_config.tcp_speed, 0, 0, dz)
     irc5.move_rel_frame(0, 0, dz)
@@ -178,7 +179,6 @@ def state_machine():
         find_depth()
         state_last_time = current_time
     elif global_state.motion == MotionState.ASCEND:
-        set_robot_speed(ASCENT_SPEED)
         ascend()
     else:
         return
