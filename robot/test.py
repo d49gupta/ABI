@@ -5,6 +5,7 @@ import time
 import cv2
 
 if __name__ == "__main__":
+    global_state.calibration = CalibrationMode.FOUR_POINT
     global_state.motion = MotionState.FIND_TARGET
     global_state.set_target(ThreePointState.FIND_CENTER)
 

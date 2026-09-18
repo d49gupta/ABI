@@ -9,7 +9,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 
-# add_definitions(-DTHREE_POINT)
+add_definitions(-DTHREE_POINT)
 # add_definitions(-DOLD_TAGS)
 
 find_package(OpenCV REQUIRED)

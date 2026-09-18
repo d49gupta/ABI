@@ -9,6 +9,7 @@ MQTT_BROKER = "10.89.1.194"
 # MQTT_BROKER = "127.0.0.1"
 CAMERA_TOPIC = "camera/center_est"
 PENCIL_TOPIC = "pencil/reading"
+BINARY_PENCIL_TOPIC = "binary_pencil/reading"
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
 
@@ -86,7 +87,7 @@ def receivePencil(payload):
     data = json.loads(payload)
     raw = int(data["raw"])
     distance = float(data["millimeters"])
-    flag = int(data["flag"])
+    flag = int(data["active"])
     pencil_logger.info("%d, %.4f, %d", raw, distance, flag)
     print(f"Received Pencil reading: {raw} bits")
 

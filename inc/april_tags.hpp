@@ -69,14 +69,14 @@ public:
         tag_positions_x[1] = {0, -two_tag_offset};
         tag_positions_x[2] = {tag_offset, -tag_offset};
         tag_positions_x[3] = {-tag_offset,  -tag_offset};
-        tag_positions_x[4] = {0,  -two_tag_offset};
+        tag_positions_x[4] = {0,  -tag_offset};
             tag_positions_x[0] = {0, 0};
 
         tag_positions_y[0] = {-tag_offset, tag_offset};
         tag_positions_y[1] = {-tag_offset, -tag_offset};
         tag_positions_y[2] = {0,  0};
         tag_positions_y[3] = {-two_tag_offset,  0};
-            tag_positions_y[4] = {-two_tag_offset, 0};
+            tag_positions_y[4] = {-tag_offset, 0};
 	#endif
 
         tag_sizes[0] = tag_size_corners;

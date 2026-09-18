@@ -12,6 +12,7 @@ CAMERA_CSV = "C:/Users/dharm/OneDrive - University of Waterloo/Documents/School/
 PENCIL_CSV = "C:/Users/dharm/OneDrive - University of Waterloo/Documents/School/Fourth Year/Capstone/ABI/test_logs/pencil_logs.csv"
 
 PENCIL_TOPIC = "pencil/reading"
+BINARY_PENCIL_TOPIC = "binary_pencil/reading"
 CAMERA_TOPIC = "camera/detections"
 
 PENCIL_HZ = 100

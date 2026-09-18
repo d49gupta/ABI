@@ -5,6 +5,7 @@ from robot.globals import *
 import time
 
 if __name__ == "__main__":
+    global_state.calibration = CalibrationMode.FOUR_POINT
     print("Connecting to sensors")
     sensors.connect_sensors()
     sensors.start_sensors()
